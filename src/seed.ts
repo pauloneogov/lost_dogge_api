@@ -30,6 +30,8 @@ async function main() {
   console.log(animalBreeds)
 
   let mockPets = []
+  let hello = []
+  
   for (let i = 0; i < 1000; i++) {
     mockPets.push({
       name: faker.name.firstName(),
@@ -58,19 +60,24 @@ async function main() {
   const pets = await prisma.pets.findMany()
   console.log(pets)
 
-  let mockPetImages = []
+  let mockPetImages: any = []
   for (let i = 0; i < 2; i++) {
     pets.forEach(_pet => {
       mockPetImages.push({
         pet_id: _pet.id,
         url: faker.image.animals()
-
       })
     });
-
-  await prisma.pet_images
-  
   }
+
+  await prisma.pet_images.createMany({
+    data: mockPetImages
+  })
+
+  const petImages = await prisma.pet_images.findMany()
+  console.log(petImages)
+
+
 }
 
 
