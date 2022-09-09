@@ -1,32 +1,30 @@
-import { PrismaClient, Role } from "@prisma/client";
-import { pbkdf2Sync } from "crypto";
+import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const user = await prisma.user.create({
-    data: {
-      email: "john@gmail.com",
-      role: Role.ADMIN,
-    },
-  });
+  await prisma.animal_types.deleteMany()
+  await prisma.animal_breeds.deleteMany()
 
-  const salt = pbkdf2Sync(
-    "password",
-    new Date().toISOString(),
-    1000,
-    64,
-    `sha512`
-  ).toString(`hex`);
+  await prisma.animal_types.createMany({
+    data: [
+      {name: 'Cat'},
+      {name: 'Dog'}
+    ]
+  })
 
-  await prisma.auth.create({
-    data: {
-      userId: user.id,
-      hash: pbkdf2Sync("password", salt, 1000, 64, `sha512`).toString(`hex`),
-      salt: salt,
-    },
-  });
+  const animalTypes = await prisma.animal_types.findMany()
+  console.log(animalTypes)
 
-  console.log(`User created: ${user.id} ${user.email}`);
+  await prisma.animal_breeds.createMany(
+    {
+      data: [
+        {name: 'Maine Coon', animal_type_id: animalTypes.find(_animalType => _animalType.name === 'Cat')?.id},
+        {name: 'Persian', animal_type_id: animalTypes.find(_animalType => _animalType.name === 'Cat')?.id},
+      ]
+    })
+
+  const animalBreeds = await prisma.animal_breeds.findMany()
+  console.log(animalBreeds)
 }
 
 main();

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,24 +7,108 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  USER
+model animal_breeds {
+  id             BigInt        @id @default(autoincrement())
+  created_at     DateTime?     @default(now()) @db.Timestamptz(6)
+  name           String?       @db.VarChar
+  description    String?       @db.VarChar
+  animal_type_id BigInt?
+  animal_types   animal_types? @relation(fields: [animal_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pets           pets[]
 }
 
-model Auth {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  userId    String   @unique
-  hash      String
-  salt      String
+model animal_types {
+  id            BigInt          @id @default(autoincrement())
+  created_at    DateTime?       @default(now()) @db.Timestamptz(6)
+  name          String?         @db.VarChar
+  description   String?         @db.VarChar
+  animal_breeds animal_breeds[]
 }
 
-model User {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  email     String   @unique
-  role      Role     @default(USER)
+model customers {
+  id             BigInt    @id @default(autoincrement())
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  card_brand     String?   @db.VarChar
+  card_last_four Int?      @db.SmallInt
+  trial_ends_at  DateTime? @db.Timestamptz(6)
+  user_id        String?   @db.Uuid
+  users          users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model lost_pet_dates {
+  id         BigInt    @id @default(autoincrement())
+  pet_id     String?   @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  lost_date  DateTime? @db.Timestamptz(6)
+  found_date DateTime? @db.Timestamptz(6)
+  pets       pets?     @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pet_match_images {
+  id               BigInt    @id @default(autoincrement())
+  match_percentage Float?    @default(0) @db.Real
+  created_at       DateTime? @default(now()) @db.Timestamptz(6)
+  pet_id           String?   @db.Uuid
+  pets             pets?     @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pet_subscriptions {
+  id                 BigInt              @id(map: "user_subscriptions_pkey") @default(autoincrement())
+  created_at         DateTime?           @default(now()) @db.Timestamptz(6)
+  name               String?             @db.VarChar
+  stripe_status      String?             @db.VarChar
+  stripe_plan_id     BigInt?
+  quantity           Int?                @db.SmallInt
+  trial_ends_at      DateTime?           @db.Timestamptz(6)
+  ends_at            DateTime?           @db.Timestamptz(6)
+  pet_id             String?             @db.Uuid
+  pets               pets?               @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subscription_plans subscription_plans? @relation(fields: [stripe_plan_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pets {
+  id                String              @id(map: "pets_1_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  created_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  name              String?             @db.VarChar
+  description       String?             @db.VarChar
+  weight            Int?                @db.SmallInt
+  height            Int?                @db.SmallInt
+  gender            Boolean?
+  breed_id          BigInt?
+  is_vaccinated     Boolean?
+  status            Int?                @db.SmallInt
+  contact_number    String?             @db.VarChar
+  email             String?             @db.VarChar
+  instagram         String?             @db.VarChar
+  facebook          String?             @db.VarChar
+  twitter           String?             @db.VarChar
+  is_deleted        Boolean?
+  user_id           String?             @db.Uuid
+  animal_breeds     animal_breeds?      @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users             users?              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lost_pet_dates    lost_pet_dates[]
+  pet_match_images  pet_match_images[]
+  pet_subscriptions pet_subscriptions[]
+}
+
+model subscription_plans {
+  id                BigInt              @id @default(autoincrement())
+  created_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  name              String?             @db.VarChar
+  price             Float?              @default(0) @db.Real
+  is_recurring      Boolean?            @default(false)
+  pet_subscriptions pet_subscriptions[]
+}
+
+model users {
+  id                  String      @id(map: "user_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  first_name          String?     @db.VarChar
+  last_name           String?     @db.VarChar
+  type                Int?
+  created_at          DateTime?   @default(now()) @db.Timestamptz(6)
+  call_phone_number   String?     @db.VarChar
+  default_measurement Boolean?
+  about_me            String?     @db.VarChar
+  customers           customers[]
+  pets                pets[]
 }
