@@ -525,6 +525,102 @@ export interface paths {
       };
     };
   };
+  "/pet_images": {
+    get: {
+      parameters: {
+        query: {
+          id?: parameters["rowFilter.pet_images.id"];
+          created_at?: parameters["rowFilter.pet_images.created_at"];
+          pet_id?: parameters["rowFilter.pet_images.pet_id"];
+          url?: parameters["rowFilter.pet_images.url"];
+          /** Filtering Columns */
+          select?: parameters["select"];
+          /** Ordering */
+          order?: parameters["order"];
+          /** Limiting and Pagination */
+          offset?: parameters["offset"];
+          /** Limiting and Pagination */
+          limit?: parameters["limit"];
+        };
+        header: {
+          /** Limiting and Pagination */
+          Range?: parameters["range"];
+          /** Limiting and Pagination */
+          "Range-Unit"?: parameters["rangeUnit"];
+          /** Preference */
+          Prefer?: parameters["preferCount"];
+        };
+      };
+      responses: {
+        /** OK */
+        200: {
+          schema: definitions["pet_images"][];
+        };
+        /** Partial Content */
+        206: unknown;
+      };
+    };
+    post: {
+      parameters: {
+        body: {
+          /** pet_images */
+          pet_images?: definitions["pet_images"];
+        };
+        query: {
+          /** Filtering Columns */
+          select?: parameters["select"];
+        };
+        header: {
+          /** Preference */
+          Prefer?: parameters["preferReturn"];
+        };
+      };
+      responses: {
+        /** Created */
+        201: unknown;
+      };
+    };
+    delete: {
+      parameters: {
+        query: {
+          id?: parameters["rowFilter.pet_images.id"];
+          created_at?: parameters["rowFilter.pet_images.created_at"];
+          pet_id?: parameters["rowFilter.pet_images.pet_id"];
+          url?: parameters["rowFilter.pet_images.url"];
+        };
+        header: {
+          /** Preference */
+          Prefer?: parameters["preferReturn"];
+        };
+      };
+      responses: {
+        /** No Content */
+        204: never;
+      };
+    };
+    patch: {
+      parameters: {
+        query: {
+          id?: parameters["rowFilter.pet_images.id"];
+          created_at?: parameters["rowFilter.pet_images.created_at"];
+          pet_id?: parameters["rowFilter.pet_images.pet_id"];
+          url?: parameters["rowFilter.pet_images.url"];
+        };
+        body: {
+          /** pet_images */
+          pet_images?: definitions["pet_images"];
+        };
+        header: {
+          /** Preference */
+          Prefer?: parameters["preferReturn"];
+        };
+      };
+      responses: {
+        /** No Content */
+        204: never;
+      };
+    };
+  };
   "/pet_match_images": {
     get: {
       parameters: {
@@ -1083,6 +1179,27 @@ export interface definitions {
     /** Format: character varying */
     about_me?: string;
   };
+  pet_images: {
+    /**
+     * Format: bigint
+     * @description Note:
+     * This is a Primary Key.<pk/>
+     */
+    id: number;
+    /**
+     * Format: timestamp with time zone
+     * @default now()
+     */
+    created_at?: string;
+    /**
+     * Format: uuid
+     * @description Note:
+     * This is a Foreign Key to `pets.id`.<fk table='pets' column='id'/>
+     */
+    pet_id?: string;
+    /** Format: character varying */
+    url?: string;
+  };
   pet_match_images: {
     /**
      * Format: bigint
@@ -1121,9 +1238,9 @@ export interface definitions {
     name?: string;
     /** Format: character varying */
     description?: string;
-    /** Format: real */
+    /** Format: smallint */
     weight?: number;
-    /** Format: real */
+    /** Format: smallint */
     height?: number;
     /** Format: boolean */
     gender?: boolean;
@@ -1311,6 +1428,16 @@ export interface parameters {
   "rowFilter.users.default_measurement": string;
   /** Format: character varying */
   "rowFilter.users.about_me": string;
+  /** @description pet_images */
+  "body.pet_images": definitions["pet_images"];
+  /** Format: bigint */
+  "rowFilter.pet_images.id": string;
+  /** Format: timestamp with time zone */
+  "rowFilter.pet_images.created_at": string;
+  /** Format: uuid */
+  "rowFilter.pet_images.pet_id": string;
+  /** Format: character varying */
+  "rowFilter.pet_images.url": string;
   /** @description pet_match_images */
   "body.pet_match_images": definitions["pet_match_images"];
   /** Format: bigint */
@@ -1331,9 +1458,9 @@ export interface parameters {
   "rowFilter.pets.name": string;
   /** Format: character varying */
   "rowFilter.pets.description": string;
-  /** Format: real */
+  /** Format: smallint */
   "rowFilter.pets.weight": string;
-  /** Format: real */
+  /** Format: smallint */
   "rowFilter.pets.height": string;
   /** Format: boolean */
   "rowFilter.pets.gender": string;

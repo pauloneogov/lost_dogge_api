@@ -3,6 +3,7 @@ import { faker } from '@faker-js/faker';
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.pet_images.deleteMany()
   await prisma.pets.deleteMany()
   await prisma.animal_breeds.deleteMany()
   await prisma.animal_types.deleteMany()
@@ -33,8 +34,8 @@ async function main() {
     mockPets.push({
       name: faker.name.firstName(),
       description: faker.lorem.paragraph(),
-      weight: faker.datatype.float({precision: 0.01}),
-      height: faker.datatype.float({precision: 0.01}),
+      weight: faker.datatype.number({max: 20}),
+      height: faker.datatype.number({max: 20}),
       gender: faker.datatype.boolean(),
       breed_id: animalBreeds[faker.datatype.number({max: animalBreeds.length - 1})].id,
       is_vaccinated: faker.datatype.boolean(),
@@ -56,6 +57,22 @@ async function main() {
 
   const pets = await prisma.pets.findMany()
   console.log(pets)
+
+  let mockPetImages = []
+  for (let i = 0; i < 2; i++) {
+    pets.forEach(_pet => {
+      mockPetImages.push({
+        pet_id: _pet.id,
+        url: faker.image.animals()
+
+      })
+    });
+
+  await prisma.pet_images
+  
+  }
 }
+
+
 
 main();
