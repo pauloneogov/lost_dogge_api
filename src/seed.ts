@@ -1,9 +1,11 @@
 import { PrismaClient } from "@prisma/client";
+import { faker } from '@faker-js/faker';
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.animal_types.deleteMany()
+  await prisma.pets.deleteMany()
   await prisma.animal_breeds.deleteMany()
+  await prisma.animal_types.deleteMany()
 
   await prisma.animal_types.createMany({
     data: [
@@ -25,6 +27,35 @@ async function main() {
 
   const animalBreeds = await prisma.animal_breeds.findMany()
   console.log(animalBreeds)
+
+  let mockPets = []
+  for (let i = 0; i < 1000; i++) {
+    mockPets.push({
+      name: faker.name.firstName(),
+      description: faker.lorem.paragraph(),
+      weight: faker.datatype.float({precision: 0.01}),
+      height: faker.datatype.float({precision: 0.01}),
+      gender: faker.datatype.boolean(),
+      breed_id: animalBreeds[faker.datatype.number({max: animalBreeds.length - 1})].id,
+      is_vaccinated: faker.datatype.boolean(),
+      status: faker.datatype.number({max: 2}),
+      contact_number: faker.phone.number(),
+      email: faker.internet.email(),
+      instagram: faker.internet.domainWord(),
+      facebook: faker.internet.domainWord(),
+      twitter: faker.internet.domainName(),
+      is_deleted: faker.datatype.boolean(),
+      // user_id: 
+
+    })
+  }
+
+  await prisma.pets.createMany({
+    data: mockPets
+  })
+
+  const pets = await prisma.pets.findMany()
+  console.log(pets)
 }
 
 main();

@@ -9,7 +9,8 @@
     "db:push": "prisma db push --accept-data-loss",
     "db:migrate": "prisma migrate dev",
     "build": "tsc",
-    "start": "ts-node src/main.ts"
+    "start": "ts-node src/main.ts",
+    "db:sync": "node scripts/sync-db"
   },
   "prisma": {
     "seed": "ts-node src/seed.ts"
@@ -25,6 +26,7 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
+    "@faker-js/faker": "^7.5.0",
     "@prisma/client": "4.3.1",
     "dotenv": "^16.0.0",
     "fastify": "^3.28.0",
