@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { faker } from '@faker-js/faker';
 const prisma = new PrismaClient();
+// import breedsData from './json/breed.js'
+let breedsData = require('./json/breed.js')
+console.log(breedsData)
 
 async function main() {
   await prisma.pet_images.deleteMany()
@@ -18,19 +21,23 @@ async function main() {
   const animalTypes = await prisma.animal_types.findMany()
   console.log(animalTypes)
 
+
+  const formattedBreeds = breedsData.map((_breed: any) => {
+    return {
+      name: humanize(_breed.breed),
+      animal_type_id: animalTypes.find(_animalType => _animalType.name === _breed.species)?.id
+    }
+  })
+
   await prisma.animal_breeds.createMany(
     {
-      data: [
-        {name: 'Maine Coon', animal_type_id: animalTypes.find(_animalType => _animalType.name === 'Cat')?.id},
-        {name: 'Persian', animal_type_id: animalTypes.find(_animalType => _animalType.name === 'Cat')?.id},
-      ]
+      data: formattedBreeds
     })
 
   const animalBreeds = await prisma.animal_breeds.findMany()
   console.log(animalBreeds)
 
   let mockPets = []
-  let hello = []
   
   for (let i = 0; i < 1000; i++) {
     mockPets.push({
@@ -80,6 +87,12 @@ async function main() {
 
 }
 
-
+function humanize(str: string) {
+  let i, frags = str.split('_');
+  for (i=0; i<frags.length; i++) {
+    frags[i] = frags[i].charAt(0).toUpperCase() + frags[i].slice(1);
+  }
+  return frags.join(' ');
+}
 
 main();
