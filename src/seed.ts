@@ -10,6 +10,8 @@ async function main() {
   await prisma.pets.deleteMany()
   await prisma.animal_breeds.deleteMany()
   await prisma.animal_types.deleteMany()
+  await prisma.lost_meta.deleteMany()
+
 
   await prisma.animal_types.createMany({
     data: [
@@ -84,8 +86,24 @@ async function main() {
   const petImages = await prisma.pet_images.findMany()
   console.log(petImages)
 
+  let mockPetLostMeta = pets.map(pet => {
+    return {
+      pet_id:pet.id,
+      lost_date: faker.date.recent(),
+      longitude: faker.address.longitude(),
+      latitude: faker.address.latitude()
+    }
+  })
+  console.log(mockPetLostMeta)
 
+  // await prisma.lost_meta.createMany({
+  //   data: mockPetLostMeta
+  // })
+
+  const lostMeta = await prisma.lost_meta.findMany()
+  console.log(lostMeta)
 }
+
 
 function humanize(str: string) {
   let i, frags = str.split('_');
