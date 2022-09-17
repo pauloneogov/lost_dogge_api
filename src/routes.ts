@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { authRoutes } from "./controllers/auth";
+import { petRoutes } from "./controllers/pets";
 
 export function registerRoutes(fastify: FastifyInstance) {
-
+  petRoutes(fastify);
 }

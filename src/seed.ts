@@ -1,16 +1,18 @@
 import { PrismaClient } from "@prisma/client";
 import { faker } from '@faker-js/faker';
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ['query']
+});
 // import breedsData from './json/breed.js'
 let breedsData = require('./json/breed.js')
 console.log(breedsData)
 
 async function main() {
+  await prisma.lost_meta.deleteMany()
   await prisma.pet_images.deleteMany()
   await prisma.pets.deleteMany()
   await prisma.animal_breeds.deleteMany()
   await prisma.animal_types.deleteMany()
-  await prisma.lost_meta.deleteMany()
 
 
   await prisma.animal_types.createMany({
@@ -90,20 +92,20 @@ async function main() {
     return {
       pet_id:pet.id,
       lost_date: faker.date.recent(),
-      longitude: faker.address.longitude(),
-      latitude: faker.address.latitude()
+      
+      longitude: parseFloat(faker.address.longitude()),
+      latitude:  parseFloat(faker.address.latitude())
     }
   })
   console.log(mockPetLostMeta)
 
-  // await prisma.lost_meta.createMany({
-  //   data: mockPetLostMeta
-  // })
+  await prisma.lost_meta.createMany({
+    data: mockPetLostMeta
+  })
 
   const lostMeta = await prisma.lost_meta.findMany()
   console.log(lostMeta)
 }
-
 
 function humanize(str: string) {
   let i, frags = str.split('_');
