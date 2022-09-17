@@ -1,9 +1,12 @@
 import "dotenv/config";
-import Fastify from "fastify";
+import Fastify, { fastify } from "fastify";
 import cors from "fastify-cors";
 import { randomBytes } from "crypto";
 import { registerRoutes } from "./routes";
 import { prisma } from "./prisma";
+// @ts-ignore
+import axiosClient from 'fastify-axios'
+
 
 const main = async () => {
   const server = Fastify({
@@ -16,6 +19,10 @@ const main = async () => {
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept"],
   });
+
+  server.register(axiosClient, {
+    name: 'axios'
+  })
 
   // connect to database
   await prisma.$connect();

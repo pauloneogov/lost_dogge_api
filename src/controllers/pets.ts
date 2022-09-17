@@ -10,7 +10,11 @@ enum PetStatus {
 export function petRoutes(fastify: FastifyInstance) {
     fastify.get("/api/v1/pets",
     async (request:FastifyRequest, reply: FastifyReply) => {
-        let { longitude, latitude, locationText, status = 0, skip = 0, limit = 100 } = request.params as {
+        // @ts-ignore
+        const data = await fastify.axios.get('http://ip-api.com/json/24.48.0.1')
+        const { lon: ipLongitude, lat: ipLatitude} = data?.data
+
+        let { longitude = ipLatitude, latitude = ipLongitude, status = 0, skip = 0, limit = 100 } = request.params as {
             longitude: number,
             latitude: number,
             locationText: string | undefined,
@@ -73,7 +77,7 @@ export function petRoutes(fastify: FastifyInstance) {
         INNER JOIN public.pet_images ON public.pet_images.pet_id = public.pets.id
         INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
         INNER JOIN public.animal_types ON public.animal_types.id = public.animal_breeds.animal_type_id
-        WHERE is_deleted = false
+        WHERE is_deleted = false AND status = ${status} 
         GROUP BY public.pets.id, public.animal_breeds.id, public.animal_types.id
         OFFSET ${skip}
         LIMIT ${limit}
