@@ -24,7 +24,7 @@ export function petRoutes(fastify: FastifyInstance) {
         }
         const { lon: ipLongitude, lat: ipLatitude} = ipData?.data
 
-        let { longitude = ipLatitude || vermontBurlingtonGeo.lon, latitude = ipLongitude || vermontBurlingtonGeo.lat, status = 0, radius = 50, skip = 0, limit = 100 } = request.params as {
+        let { longitude = parseFloat(ipLatitude) || vermontBurlingtonGeo.lon, latitude = parseFloat(ipLongitude) || vermontBurlingtonGeo.lat, status = 0, radius = 10000, skip = 0, limit = 100 } = request.params as {
             longitude: number,
             latitude: number,
             radius: number,
@@ -34,7 +34,7 @@ export function petRoutes(fastify: FastifyInstance) {
         }
 
         let pets: any = await prisma.$queryRaw`
-        SELECT 
+        SELECT
         json_build_object(
             'id', public.pets.id,
             'created_at', public.pets.created_at,
@@ -51,9 +51,7 @@ export function petRoutes(fastify: FastifyInstance) {
             'instagram', public.pets.instagram,
             'facebook', public.pets.facebook,
             'twitter', public.pets.twitter,
-            'distance', SQRT(
-                POW(69.1 * (public.pets.latitude - ${longitude}), 2) +
-                POW(69.1 * (${latitude} - public.pets.longitude) * COS(public.pets.latitude / 57.3), 2)),
+            'distance', ROUND(((ACOS(SIN(${latitude} * PI() / 180) * SIN(public.pets.longitude * PI() / 180) + COS(${latitude}  * PI() / 180) * COS(public.pets.longitude  * PI() / 180) * COS((${longitude} - public.pets.longitude) * PI() / 180)) * 180 / PI()) * 60 * 1.1515)),
             'breed', json_build_object(
                 'id', public.animal_breeds.id,
                 'name', public.animal_breeds.name,
@@ -71,6 +69,14 @@ export function petRoutes(fastify: FastifyInstance) {
         INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
         INNER JOIN public.animal_types ON public.animal_types.id = public.animal_breeds.animal_type_id
         WHERE is_deleted = false AND status = ${status}
+        AND acos(
+            sin(radians(${latitude})) 
+              * sin(radians(public.pets.latitude)) 
+            + cos(radians(${latitude})) 
+              * cos(radians(public.pets.latitude)) 
+              * cos( radians(${latitude})
+                - radians(public.pets.longitude))
+            ) * 6371 <= ${radius}        
         GROUP BY public.pets.id, public.animal_breeds.id, public.animal_types.id
         OFFSET ${skip}
         LIMIT ${limit}
