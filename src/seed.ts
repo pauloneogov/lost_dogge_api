@@ -59,6 +59,9 @@ async function main() {
       facebook: faker.internet.domainWord(),
       twitter: faker.internet.domainName(),
       is_deleted: faker.datatype.boolean(),
+      lost_date: faker.date.recent(),
+      longitude: parseFloat(faker.address.longitude()),
+      latitude:  parseFloat(faker.address.latitude())
       // user_id: 
 
     })
@@ -92,7 +95,6 @@ async function main() {
     return {
       pet_id:pet.id,
       lost_date: faker.date.recent(),
-      
       longitude: parseFloat(faker.address.longitude()),
       latitude:  parseFloat(faker.address.latitude())
     }

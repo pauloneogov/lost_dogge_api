@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["fullTextSearch"]
 }
 
@@ -76,6 +76,10 @@ model pets {
   twitter           String?             @db.VarChar
   is_deleted        Boolean?
   user_id           String?             @db.Uuid
+  lost_date         DateTime?           @db.Timestamp(6)
+  found_date        DateTime?           @db.Timestamp(6)
+  longitude         Float?
+  latitude          Float?
   animal_breeds     animal_breeds?      @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users             users?              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lost_meta         lost_meta[]

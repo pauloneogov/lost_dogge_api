@@ -8,34 +8,32 @@ enum PetStatus {
 }
 
 export function petRoutes(fastify: FastifyInstance) {
+    const vermontBurlingtonGeo = {
+        lon: 44.4759,
+        lat: 73.2121
+    }
+
     fastify.get("/api/v1/pets",
     async (request:FastifyRequest, reply: FastifyReply) => {
-        // @ts-ignore
-        const data = await fastify.axios.get('http://ip-api.com/json/24.48.0.1')
-        const { lon: ipLongitude, lat: ipLatitude} = data?.data
+        let ipData
+        try {
+            // @ts-ignore
+            ipData = await fastify.axios.get('http://ip-api.com/json/24.48.0.1')
+        } catch (error) {
+            console.log(error)
+        }
+        const { lon: ipLongitude, lat: ipLatitude} = ipData?.data
 
-        let { longitude = ipLatitude, latitude = ipLongitude, status = 0, skip = 0, limit = 100 } = request.params as {
+        let { longitude = ipLatitude || vermontBurlingtonGeo.lon, latitude = ipLongitude || vermontBurlingtonGeo.lat, status = 0, radius = 50, skip = 0, limit = 100 } = request.params as {
             longitude: number,
             latitude: number,
-            locationText: string | undefined,
+            radius: number,
             status: PetStatus | undefined,
             skip: number,
-            limit: number
+            limit: number,
         }
 
-        // let pets = await prisma.pets.findMany({
-        //     skip,
-        //     take: limit,
-        //     include: {
-        //         pet_images: true,
-        //         lost_meta: true
-        //     },
-        //     where: {
-        //         status
-        //     }
-        // })
-
-        let test: any = await prisma.$queryRaw`
+        let pets: any = await prisma.$queryRaw`
         SELECT 
         json_build_object(
             'id', public.pets.id,
@@ -53,18 +51,13 @@ export function petRoutes(fastify: FastifyInstance) {
             'instagram', public.pets.instagram,
             'facebook', public.pets.facebook,
             'twitter', public.pets.twitter,
+            'distance', SQRT(
+                POW(69.1 * (public.pets.latitude - ${longitude}), 2) +
+                POW(69.1 * (${latitude} - public.pets.longitude) * COS(public.pets.latitude / 57.3), 2)),
             'breed', json_build_object(
                 'id', public.animal_breeds.id,
                 'name', public.animal_breeds.name,
                 'type', public.animal_types.name
-            ),
-            'lost_meta', json_agg(
-                json_build_object(
-                    'lost_date', public.lost_meta.lost_date,
-                    'found_date', public.lost_meta.found_date,
-                    'longitude', public.lost_meta.longitude,
-                    'latitude', public.lost_meta.latitude
-                )
             ),
             'pet_images', json_agg(
                 json_build_object(
@@ -72,22 +65,23 @@ export function petRoutes(fastify: FastifyInstance) {
                 )
             )
         )
+        
         FROM public.pets
-        INNER JOIN public.lost_meta ON public.lost_meta.pet_id = public.pets.id
         INNER JOIN public.pet_images ON public.pet_images.pet_id = public.pets.id
         INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
         INNER JOIN public.animal_types ON public.animal_types.id = public.animal_breeds.animal_type_id
-        WHERE is_deleted = false AND status = ${status} 
+        WHERE is_deleted = false AND status = ${status}
         GROUP BY public.pets.id, public.animal_breeds.id, public.animal_types.id
         OFFSET ${skip}
         LIMIT ${limit}
         `
-        // console.log(pets[0])
-        console.log(test[0])
+
+
+        console.log(pets[0])
 
 
         reply.send({
-            test
+            pets
         });
 
 
