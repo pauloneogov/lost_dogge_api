@@ -5,7 +5,6 @@ const prisma = new PrismaClient({
 });
 // import breedsData from './json/breed.js'
 let breedsData = require('./json/breed.js')
-console.log(breedsData)
 
 async function main() {
   await prisma.lost_meta.deleteMany()
@@ -42,8 +41,13 @@ async function main() {
   console.log(animalBreeds)
 
   let mockPets = []
+
+  const vermontBurlingtonGeo = {
+    lon: 44.4759,
+    lat: -73.2121
+  }
   
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 5000; i++) {
     mockPets.push({
       name: faker.name.firstName(),
       description: faker.lorem.paragraph(),
@@ -60,10 +64,9 @@ async function main() {
       twitter: faker.internet.domainName(),
       is_deleted: faker.datatype.boolean(),
       lost_date: faker.date.recent(),
-      longitude: parseFloat(faker.address.longitude()),
-      latitude:  parseFloat(faker.address.latitude())
+      longitude: vermontBurlingtonGeo.lon + faker.datatype.float({precision: 0.0001, max: 1}),
+      latitude:  vermontBurlingtonGeo.lat + faker.datatype.float({precision: 0.0001, max: 1}),
       // user_id: 
-
     })
   }
 
@@ -91,12 +94,14 @@ async function main() {
   const petImages = await prisma.pet_images.findMany()
   console.log(petImages)
 
+
+
   let mockPetLostMeta = pets.map(pet => {
     return {
       pet_id:pet.id,
       lost_date: faker.date.recent(),
-      longitude: parseFloat(faker.address.longitude()),
-      latitude:  parseFloat(faker.address.latitude())
+      longitude: vermontBurlingtonGeo.lon + faker.datatype.float({precision: 0.0001, max: 1}),
+      latitude:  vermontBurlingtonGeo.lat + faker.datatype.float({precision: 0.0001, max: 1}),
     }
   })
   console.log(mockPetLostMeta)
