@@ -10,8 +10,8 @@
     "db:seed": "prisma db seed",
     "db:push": "prisma db push --accept-data-loss",
     "db:migrate": "prisma migrate dev",
-    "build": "tsc",
-    "dev": "ts-node src/main.ts",
+    "build": "nodemon src/main.ts",
+    "dev": "ts-node-transpile-only src/main.ts",
     "dev:watch": "nodemon src/main.ts"
   },
   "prisma": {
