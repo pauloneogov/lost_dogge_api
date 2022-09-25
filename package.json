@@ -11,7 +11,7 @@
     "db:push": "prisma db push --accept-data-loss",
     "db:migrate": "prisma migrate dev",
     "build": "nodemon src/main.ts",
-    "dev": "ts-node-transpile-only src/main.ts",
+    "dev": "ts-node src/main.ts",
     "dev:watch": "nodemon src/main.ts"
   },
   "prisma": {
