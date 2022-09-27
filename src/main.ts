@@ -4,10 +4,8 @@ import cors from "fastify-cors";
 import { randomBytes } from "crypto";
 import { registerRoutes } from "./routes";
 import { prisma } from "./prisma";
-import fastifyStatic from '@fastify/static'
 // @ts-ignore
 import axiosClient from 'fastify-axios'
-import path from "path";
 
 
 const main = async () => {
@@ -16,10 +14,6 @@ const main = async () => {
     logger: true,
   });
 
-  server.register(fastifyStatic, {
-    root: path.join(__dirname, 'public'),
-    prefix: '/public/', // optional: default '/'
-  })
 
   server.register(cors, {
     origin: "*",
