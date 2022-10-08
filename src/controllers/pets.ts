@@ -87,9 +87,6 @@ export function petRoutes(fastify: FastifyInstance) {
         LIMIT ${limit}
         `
 
-        console.log(pets[0])
-
-
         reply.send({
             pets
         });

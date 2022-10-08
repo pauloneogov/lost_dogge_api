@@ -82,7 +82,7 @@ async function main() {
     pets.forEach(_pet => {
       mockPetImages.push({
         pet_id: _pet.id,
-        url: faker.image.animals()
+        url: faker.helpers.arrayElement([faker.image.animals(), faker.image.cats(), faker.image.fashion(), faker.image.food(), faker.image.city() ]) 
       })
     });
   }

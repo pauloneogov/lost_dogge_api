@@ -14,7 +14,6 @@ const main = async () => {
     logger: true,
   });
 
-
   server.register(cors, {
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
