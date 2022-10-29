@@ -1,98 +1,122 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "../prisma";
-import '../helpers/bigInt.js'
+import "../helpers/bigInt.js";
+import { Prisma } from "@prisma/client";
 
 enum PetStatus {
-    LOST= 0,
-    FOUND = 1,
+  LOST = 0,
+  FOUND = 1,
 }
 
+const orderByMapper: Record<string, string> = {
+  created_at: "public.pets.created_at",
+  distance: "d",
+};
+
 export function petRoutes(fastify: FastifyInstance) {
-    const vermontBurlingtonGeo = {
-        lon: 44.4759,
-        lat: -73.2121
-    }
+  const vermontBurlingtonGeo = {
+    lon: 44.4759,
+    lat: -73.2121,
+  };
 
-    fastify.get("/api/v1/pets",
-    async (request:FastifyRequest, reply: FastifyReply) => {
-        let ipData
-        let dbBreedIds
-        try {
-            // @ts-ignore
-            ipData = await fastify.axios.get('http://ip-api.com/json/132.198.39.21')
-            console.log(ipData)
-            const dbBreeds = await prisma.animal_breeds.findMany()
-            dbBreedIds = dbBreeds?.map(_breed => _breed.id)
-        } catch (error) {
-            console.log(error)
-        }
-        const { lon: ipLongitude, lat: ipLatitude} = ipData?.data
+  fastify.get(
+    "/api/v1/pets",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      let ipData;
+      try {
+        // @ts-ignore
+        ipData = await fastify.axios.get(
+          "http://ip-api.com/json/132.198.39.21"
+        );
+        console.log(ipData);
+      } catch (error) {
+        throw error;
+      }
+      const { lon: ipLongitude, lat: ipLatitude } = ipData?.data;
 
-        let { longitude = parseFloat(ipLatitude) || vermontBurlingtonGeo.lon, latitude = parseFloat(ipLongitude) || vermontBurlingtonGeo.lat, status = 0, radius = 10000, skip = 0, limit = 100, breed_ids = [] } = request.params as {
-            longitude: number,
-            latitude: number,
-            radius: number,
-            status: PetStatus | undefined,
-            skip: number,
-            breed_ids: Array<BigInt>
-            limit: number,
-        }
+      let {
+        longitude = parseFloat(ipLatitude) || vermontBurlingtonGeo.lon,
+        latitude = parseFloat(ipLongitude) || vermontBurlingtonGeo.lat,
+        status = 0,
+        radius = 10000,
+        skip = 1,
+        limit = 10,
+        breed_ids = [],
+        animal_type_id = 89,
+        direction = "desc",
+        order_by = "distance",
+      } = request.params as {
+        longitude: number;
+        latitude: number;
+        radius: number;
+        status: PetStatus | undefined;
+        skip: number;
+        breed_ids: Array<BigInt>;
+        animal_type_id: number;
+        order_by: string;
+        limit: number;
+        direction: string;
+      };
 
-        console.log(dbBreedIds)
-        let pets: any = await prisma.$queryRaw`
-        SELECT
+      const breedsQuery = breed_ids.length
+        ? Prisma.sql`AND public.animal_breeds.id = ANY(${breed_ids}::int[])`
+        : Prisma.sql``;
+
+      const animalTypesQuery = animal_type_id
+        ? Prisma.sql`AND public.animal_breeds.animal_type_id = ${animal_type_id}::int`
+        : Prisma.sql``;
+
+      const orderByWithDirection = `${orderByMapper[order_by]} ${direction}`;
+
+      const orderByQuery = order_by
+        ? Prisma.sql`ORDER BY ${orderByWithDirection}`
+        : Prisma.sql``;
+
+      console.log("long", longitude);
+      console.log("lat", latitude);
+
+      let pets: any = await prisma.$queryRaw`
+        SELECT *,
+        point(public.pets.longitude, public.pets.latitude) <@>  (point(${longitude}, ${latitude})::point) as sortdistance,
+        st_distancespheroid(
+          POINT(${longitude}, ${latitude})::geometry, 
+          point(public.pets.longitude, public.pets.latitude)::geometry,
+          'SPHEROID["WGS 84",6378137,298.257223563]'::spheroid) AS d,
+        json_agg(
+          json_build_object(
+              'url', public.pet_images.url
+          )
+        ) as pet_images,
         json_build_object(
-            'id', public.pets.id,
-            'created_at', public.pets.created_at,
-            'name', public.pets.name,
-            'description', public.pets.description,
-            'weight', public.pets.weight,
-            'height', public.pets.height,
-            'gender', public.pets.gender,
-            'breed_id', public.pets.breed_id,
-            'is_vaccinated', public.pets.is_vaccinated,
-            'status', public.pets.is_vaccinated,
-            'contact_number', public.pets.contact_number,
-            'email', public.pets.email,
-            'instagram', public.pets.instagram,
-            'facebook', public.pets.facebook,
-            'twitter', public.pets.twitter,
-            'current_longitude', ${longitude},
-            'current_latitude', ${latitude},
-            'longitude', public.pets.longitude,
-            'latitude', public.pets.latitude,
-            'lost_date', public.pets.lost_date,
-            'distance',  ( 3959 * acos( cos( radians(public.pets.latitude) ) * cos( radians( ${latitude} ) ) * cos( radians( ${longitude} ) - radians(public.pets.longitude) ) + sin( radians(public.pets.latitude) ) * sin( radians( ${latitude} ) ) ) ),
-            'breed', json_build_object(
-                'id', public.animal_breeds.id,
-                'name', public.animal_breeds.name,
-                'type', public.animal_types.name
-            ),
-            'pet_images', json_agg(
-                json_build_object(
-                    'url', public.pet_images.url
-                )
+            'id', public.animal_breeds.id,
+            'name', public.animal_breeds.name,
+            'animal_type_id', public.animal_breeds.animal_type_id,
+            'animal_type', json_build_object(
+                'name', public.animal_types.name
             )
-        )
-        FROM public.pets
-        INNER JOIN public.pet_images ON public.pet_images.pet_id = public.pets.id
+        ) as breed,
+        ST_Distance(ST_MakePoint(${longitude}, ${latitude})::geography,
+        ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography, true) AS distance
+        FROM public.pets 
         INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
-        INNER JOIN public.animal_types ON public.animal_types.id = public.animal_breeds.animal_type_id
-        WHERE public.pets.is_deleted = false AND public.pets.status = ${status}
-        AND ( 3959 * acos( cos( radians(public.pets.latitude) ) * cos( radians( ${latitude} ) ) 
-        * cos( radians( ${longitude} ) - radians(public.pets.longitude) ) + sin( radians(public.pets.latitude) ) * sin( radians( ${latitude} ) ) ) ) <= ${radius}
+        ${breedsQuery}
+        ${animalTypesQuery}
+        LEFT JOIN public.animal_types ON public.animal_types.id = public.animal_breeds.animal_type_id
+        LEFT JOIN public.pet_images ON public.pet_images.pet_id = public.pets.id
+        WHERE ST_DWithin(
+            ST_MakePoint(${longitude}, ${latitude})::geography,
+            ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography,
+            ${radius}
+        )
         GROUP BY public.pets.id, public.animal_breeds.id, public.animal_types.id, public.pet_images.id
-        ORDER BY public.pets.created_at asc
-        OFFSET ${skip}
+        ${orderByQuery}
         LIMIT ${limit}
-        `
+        OFFSET (${skip} -1) * ${limit}
+        `;
 
-        reply.send({
-            pets
-        });
-
-
-
+      reply.send({
+        pets,
+      });
     }
-    )
+  );
 }
