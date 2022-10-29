@@ -72,16 +72,12 @@ export function petRoutes(fastify: FastifyInstance) {
         ? Prisma.sql`ORDER BY ${orderByWithDirection}`
         : Prisma.sql``;
 
-      console.log("long", longitude);
-      console.log("lat", latitude);
-
       let pets: any = await prisma.$queryRaw`
         SELECT *,
-        point(public.pets.longitude, public.pets.latitude) <@>  (point(${longitude}, ${latitude})::point) as sortdistance,
         st_distancespheroid(
           POINT(${longitude}, ${latitude})::geometry, 
           point(public.pets.longitude, public.pets.latitude)::geometry,
-          'SPHEROID["WGS 84",6378137,298.257223563]'::spheroid) AS d,
+          'SPHEROID["WGS 84",6378137,298.257223563]'::spheroid) AS distance,
         json_agg(
           json_build_object(
               'url', public.pet_images.url
@@ -95,7 +91,6 @@ export function petRoutes(fastify: FastifyInstance) {
                 'name', public.animal_types.name
             )
         ) as breed,
-        ST_Distance(ST_MakePoint(${longitude}, ${latitude})::geography,
         ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography, true) AS distance
         FROM public.pets 
         INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
