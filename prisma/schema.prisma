@@ -9,12 +9,13 @@ datasource db {
 }
 
 model animal_breeds {
-  id             BigInt        @id @default(autoincrement())
-  created_at     DateTime?     @default(now()) @db.Timestamptz(6)
-  name           String?       @db.VarChar
-  description    String?       @db.VarChar
+  id             BigInt          @id @default(autoincrement())
+  created_at     DateTime?       @default(now()) @db.Timestamptz(6)
+  name           String?         @db.VarChar
+  description    String?         @db.VarChar
   animal_type_id BigInt?
-  animal_types   animal_types? @relation(fields: [animal_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  animal_types   animal_types?   @relation(fields: [animal_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ai_pet_breeds  ai_pet_breeds[]
   pets           pets[]
 }
 
@@ -36,14 +37,6 @@ model customers {
   users          users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model pet_match_images {
-  id               BigInt    @id @default(autoincrement())
-  match_percentage Float?    @default(0) @db.Real
-  created_at       DateTime? @default(now()) @db.Timestamptz(6)
-  pet_id           String?   @db.Uuid
-  pets             pets?     @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-}
-
 model pet_subscriptions {
   id                 BigInt              @id(map: "user_subscriptions_pkey") @default(autoincrement())
   created_at         DateTime?           @default(now()) @db.Timestamptz(6)
@@ -59,33 +52,35 @@ model pet_subscriptions {
 }
 
 model pets {
-  id                String              @id(map: "pets_1_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
-  created_at        DateTime?           @default(now()) @db.Timestamptz(6)
-  name              String?             @db.VarChar
-  description       String?             @db.VarChar
-  weight            Int?                @db.SmallInt
-  height            Int?                @db.SmallInt
-  gender            Boolean?
-  breed_id          BigInt?
-  is_vaccinated     Boolean?
-  status            Int?                @db.SmallInt
-  contact_number    String?             @db.VarChar
-  email             String?             @db.VarChar
-  instagram         String?             @db.VarChar
-  facebook          String?             @db.VarChar
-  twitter           String?             @db.VarChar
-  is_deleted        Boolean?
-  user_id           String?             @db.Uuid
-  lost_date         DateTime?           @db.Timestamp(6)
-  found_date        DateTime?           @db.Timestamp(6)
-  longitude         Float?
-  latitude          Float?
-  animal_breeds     animal_breeds?      @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users             users?              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  lost_meta         lost_meta[]
-  pet_images        pet_images[]
-  pet_match_images  pet_match_images[]
-  pet_subscriptions pet_subscriptions[]
+  id                                         String              @id(map: "pets_1_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  created_at                                 DateTime?           @default(now()) @db.Timestamptz(6)
+  name                                       String?             @db.VarChar
+  description                                String?             @db.VarChar
+  weight                                     Int?                @db.SmallInt
+  height                                     Int?                @db.SmallInt
+  gender                                     Boolean?
+  breed_id                                   BigInt?
+  is_vaccinated                              Boolean?
+  status                                     Int?                @db.SmallInt
+  contact_number                             String?             @db.VarChar
+  email                                      String?             @db.VarChar
+  instagram                                  String?             @db.VarChar
+  facebook                                   String?             @db.VarChar
+  twitter                                    String?             @db.VarChar
+  is_deleted                                 Boolean?
+  user_id                                    String?             @db.Uuid
+  lost_date                                  DateTime?           @db.Timestamp(6)
+  found_date                                 DateTime?           @db.Timestamp(6)
+  longitude                                  Float?
+  latitude                                   Float?
+  animal_breeds                              animal_breeds?      @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                                      users?              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lost_meta                                  lost_meta[]
+  messages                                   messages[]
+  pet_images                                 pet_images[]
+  pet_matches_pet_matches_found_pet_idTopets pet_matches[]       @relation("pet_matches_found_pet_idTopets")
+  pet_matches_pet_matches_lost_pet_idTopets  pet_matches[]       @relation("pet_matches_lost_pet_idTopets")
+  pet_subscriptions                          pet_subscriptions[]
 }
 
 model subscription_plans {
@@ -98,24 +93,29 @@ model subscription_plans {
 }
 
 model users {
-  id                  String      @id(map: "user_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
-  first_name          String?     @db.VarChar
-  last_name           String?     @db.VarChar
-  type                Int?
-  created_at          DateTime?   @default(now()) @db.Timestamptz(6)
-  call_phone_number   String?     @db.VarChar
-  default_measurement Boolean?
-  about_me            String?     @db.VarChar
-  customers           customers[]
-  pets                pets[]
+  id                                   String      @id(map: "user_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  first_name                           String?     @db.VarChar
+  last_name                            String?     @db.VarChar
+  type                                 Int?
+  created_at                           DateTime?   @default(now()) @db.Timestamptz(6)
+  call_phone_number                    String?     @db.VarChar
+  default_measurement                  Boolean?
+  about_me                             String?     @db.VarChar
+  email                                String?     @db.VarChar
+  user_type                            Int?        @default(0) @db.SmallInt
+  customers                            customers[]
+  messages_messages_receiver_idTousers messages[]  @relation("messages_receiver_idTousers")
+  messages_messages_sender_idTousers   messages[]  @relation("messages_sender_idTousers")
+  pets                                 pets[]
 }
 
 model pet_images {
-  id         BigInt    @id @default(autoincrement())
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  pet_id     String?   @db.Uuid
-  url        String?   @db.VarChar
-  pets       pets?     @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id            BigInt          @id @default(autoincrement())
+  created_at    DateTime?       @default(now()) @db.Timestamptz(6)
+  pet_id        String?         @db.Uuid
+  url           String?         @db.VarChar
+  pets          pets?           @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ai_pet_breeds ai_pet_breeds[]
 }
 
 model lost_meta {
@@ -127,4 +127,46 @@ model lost_meta {
   longitude  Float?
   latitude   Float?
   pets       pets?     @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model messages {
+  id                                BigInt    @id @default(autoincrement())
+  content                           String?   @db.VarChar
+  created_at                        DateTime? @default(now()) @db.Timestamptz(6)
+  type                              Int?
+  sender_id                         String?   @db.Uuid
+  receiver_id                       String?   @db.Uuid
+  pet_id                            String?   @db.Uuid
+  pets                              pets?     @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_messages_receiver_idTousers users?    @relation("messages_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_messages_sender_idTousers   users?    @relation("messages_sender_idTousers", fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
+model ai_pet_breeds {
+  id               BigInt         @id(map: "lost_pet_breeds_pkey") @default(autoincrement())
+  created_at       DateTime?      @default(now()) @db.Timestamptz(6)
+  match_percentage Float?         @db.Real
+  pet_image_id     BigInt?
+  breed_id         BigInt?
+  animal_breeds    animal_breeds? @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pet_images       pet_images?    @relation(fields: [pet_image_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model pet_matches {
+  id                                  BigInt    @id(map: "pet_match_images_pkey") @default(autoincrement())
+  match_percentage                    Float?    @default(0) @db.Real
+  created_at                          DateTime? @default(now()) @db.Timestamptz(6)
+  found_pet_id                        String?   @db.Uuid
+  lost_pet_id                         String?   @db.Uuid
+  distance                            Float?    @db.Real
+  pets_pet_matches_found_pet_idTopets pets?     @relation("pet_matches_found_pet_idTopets", fields: [found_pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pets_pet_matches_lost_pet_idTopets  pets?     @relation("pet_matches_lost_pet_idTopets", fields: [lost_pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

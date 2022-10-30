@@ -30,13 +30,13 @@
   },
   "dependencies": {
     "@faker-js/faker": "^7.5.0",
+    "@fastify/cors": "^8.1.1",
     "@prisma/client": "4.3.1",
     "dotenv": "^16.0.0",
-    "fast-json-stringify": "^5.3.0",
-    "fastify": "^3.28.0",
-    "fastify-axios": "^1.2.5",
-    "fastify-cors": "^6.0.3",
-    "fastify-error": "^1.1.0",
+    "fast-json-stringify": "^5.4.0",
+    "fastify": "^4.9.2",
+    "fastify-axios": "^1.2.6",
+    "fastify-error": "^1.2.0",
     "json-bigint": "^1.0.0",
     "jsonwebtoken": "^8.5.1"
   }
