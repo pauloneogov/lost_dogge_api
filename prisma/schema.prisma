@@ -58,7 +58,6 @@ model pets {
   description                                String?             @db.VarChar
   weight                                     Int?                @db.SmallInt
   height                                     Int?                @db.SmallInt
-  gender                                     Boolean?
   breed_id                                   BigInt?
   is_vaccinated                              Boolean?
   status                                     Int?                @db.SmallInt
@@ -73,10 +72,14 @@ model pets {
   found_date                                 DateTime?           @db.Timestamp(6)
   longitude                                  Float?
   latitude                                   Float?
+  gender                                     Int?                @default(0) @db.SmallInt
+  address                                    String?
   animal_breeds                              animal_breeds?      @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                                      users?              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lost_meta                                  lost_meta[]
-  messages                                   messages[]
+  messages_messages_found_pet_idTopets       messages[]          @relation("messages_found_pet_idTopets")
+  messages_messages_lost_pet_idTopets        messages[]          @relation("messages_lost_pet_idTopets")
+  payments                                   payments[]
   pet_images                                 pet_images[]
   pet_matches_pet_matches_found_pet_idTopets pet_matches[]       @relation("pet_matches_found_pet_idTopets")
   pet_matches_pet_matches_lost_pet_idTopets  pet_matches[]       @relation("pet_matches_lost_pet_idTopets")
@@ -93,20 +96,18 @@ model subscription_plans {
 }
 
 model users {
-  id                                   String      @id(map: "user_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
-  first_name                           String?     @db.VarChar
-  last_name                            String?     @db.VarChar
-  type                                 Int?
-  created_at                           DateTime?   @default(now()) @db.Timestamptz(6)
-  call_phone_number                    String?     @db.VarChar
-  default_measurement                  Boolean?
-  about_me                             String?     @db.VarChar
-  email                                String?     @db.VarChar
-  user_type                            Int?        @default(0) @db.SmallInt
-  customers                            customers[]
-  messages_messages_receiver_idTousers messages[]  @relation("messages_receiver_idTousers")
-  messages_messages_sender_idTousers   messages[]  @relation("messages_sender_idTousers")
-  pets                                 pets[]
+  id                  String      @id(map: "user_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  first_name          String?     @db.VarChar
+  last_name           String?     @db.VarChar
+  type                Int?
+  created_at          DateTime?   @default(now()) @db.Timestamptz(6)
+  call_phone_number   String?     @db.VarChar
+  default_measurement Boolean?
+  about_me            String?     @db.VarChar
+  email               String?     @db.VarChar
+  user_type           Int?        @default(0) @db.SmallInt
+  customers           customers[]
+  pets                pets[]
 }
 
 model pet_images {
@@ -130,16 +131,16 @@ model lost_meta {
 }
 
 model messages {
-  id                                BigInt    @id @default(autoincrement())
-  content                           String?   @db.VarChar
-  created_at                        DateTime? @default(now()) @db.Timestamptz(6)
-  type                              Int?
-  sender_id                         String?   @db.Uuid
-  receiver_id                       String?   @db.Uuid
-  pet_id                            String?   @db.Uuid
-  pets                              pets?     @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_messages_receiver_idTousers users?    @relation("messages_receiver_idTousers", fields: [receiver_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users_messages_sender_idTousers   users?    @relation("messages_sender_idTousers", fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                               String       @id(map: "_message_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  created_at                       DateTime?    @default(now()) @db.Timestamptz(6)
+  content                          String?
+  pet_match_id                     String?      @db.Uuid
+  lost_pet_id                      String?      @db.Uuid
+  found_pet_id                     String?      @db.Uuid
+  type                             Int?
+  pets_messages_found_pet_idTopets pets?        @relation("messages_found_pet_idTopets", fields: [found_pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pets_messages_lost_pet_idTopets  pets?        @relation("messages_lost_pet_idTopets", fields: [lost_pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pet_matches                      pet_matches? @relation(fields: [pet_match_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model spatial_ref_sys {
@@ -161,12 +162,65 @@ model ai_pet_breeds {
 }
 
 model pet_matches {
-  id                                  BigInt    @id(map: "pet_match_images_pkey") @default(autoincrement())
-  match_percentage                    Float?    @default(0) @db.Real
-  created_at                          DateTime? @default(now()) @db.Timestamptz(6)
-  found_pet_id                        String?   @db.Uuid
-  lost_pet_id                         String?   @db.Uuid
-  distance                            Float?    @db.Real
-  pets_pet_matches_found_pet_idTopets pets?     @relation("pet_matches_found_pet_idTopets", fields: [found_pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  pets_pet_matches_lost_pet_idTopets  pets?     @relation("pet_matches_lost_pet_idTopets", fields: [lost_pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                                  String     @id(map: "_pet_matches_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  match_percentage                    Float?     @db.Real
+  created_at                          DateTime?  @default(now()) @db.Timestamptz(6)
+  found_pet_id                        String?    @db.Uuid
+  lost_pet_id                         String?    @db.Uuid
+  distance                            Float?     @db.Real
+  type                                Int?       @db.SmallInt
+  pets_pet_matches_found_pet_idTopets pets?      @relation("pet_matches_found_pet_idTopets", fields: [found_pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pets_pet_matches_lost_pet_idTopets  pets?      @relation("pet_matches_lost_pet_idTopets", fields: [lost_pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  messages                            messages[]
+}
+
+model payments {
+  id                       String           @id(map: "payments_2_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  created_at               DateTime?        @default(now()) @db.Timestamptz(6)
+  status                   Int?             @default(0) @db.SmallInt
+  pet_id                   String?          @db.Uuid
+  quantity                 Int?
+  start_date               DateTime?        @db.Timestamptz(6)
+  end_date                 DateTime?        @db.Timestamptz(6)
+  stripe_product_id        String?          @db.Uuid
+  receipt_url              String?
+  stripe_payment_intent_id String?
+  pets                     pets?            @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stripe_products          stripe_products? @relation(fields: [stripe_product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model stripe_products {
+  id              String     @id(map: "stripe_products_pkey1") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime?  @default(now()) @db.Timestamptz(6)
+  name            String?
+  description     String?
+  stripe_price_id String?
+  payments        payments[]
+}
+
+model fb_adsets {
+  id                String        @id(map: "fb_adset_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  optimization_goal String?       @db.VarChar
+  created_at        DateTime?     @default(now()) @db.Timestamptz(6)
+  billing_event     String?       @db.VarChar
+  daily_budget      BigInt?
+  campaign_id       String?       @db.Uuid
+  targeting         Json?         @db.Json
+  status            String?       @db.VarChar
+  start_time        DateTime?     @db.Timestamptz(6)
+  fb_adset_id       String?       @db.VarChar
+  fb_ad_id          String?       @db.VarChar
+  reach_count       Decimal?      @db.Decimal
+  impression_count  Decimal?      @db.Decimal
+  fb_campaigns      fb_campaigns? @relation(fields: [campaign_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model fb_campaigns {
+  id             String      @id @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
+  created_at     DateTime?   @default(now()) @db.Timestamptz(6)
+  name           String?     @db.VarChar
+  objective      String?     @db.VarChar
+  status         String?     @db.VarChar
+  fb_campaign_id String?     @db.VarChar
+  fb_adsets      fb_adsets[]
 }

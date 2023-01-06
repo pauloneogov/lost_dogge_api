@@ -30,7 +30,6 @@ export function petRoutes(fastify: FastifyInstance) {
         ipData = await fastify.axios.get(
           "http://ip-api.com/json/132.198.39.21"
         );
-        console.log(ipData);
       } catch (error) {
         throw error;
       }
@@ -40,28 +39,30 @@ export function petRoutes(fastify: FastifyInstance) {
       let {
         longitude = parseFloat(ipLatitude) || vermontBurlingtonGeo.lon,
         latitude = parseFloat(ipLongitude) || vermontBurlingtonGeo.lat,
-        status = 0,
+        status = 1,
         radius = 10000,
         skip = 1,
         limit = 10,
         breed_ids = [],
-        animal_type_id = 89,
+        animal_type_id = undefined,
+        gender = undefined,
         direction = "desc",
         order_by = "distance",
       } = request.query as {
         longitude: number;
         latitude: number;
         radius: number;
-        status: PetStatus | undefined;
+        status: number | undefined;
         skip: number;
         breed_ids: Array<BigInt>;
         animal_type_id: number;
+        gender: number;
         order_by: string;
         limit: number;
         direction: string;
       };
 
-      const statusQuery = Prisma.sql`AND public.pets.status = ${status}`;
+      const statusQuery = Prisma.sql`AND public.pets.status = ${status}::int`;
 
       const breedsQuery = breed_ids.length
         ? Prisma.sql`AND public.animal_breeds.id = ANY(${breed_ids}::int[])`
@@ -69,6 +70,10 @@ export function petRoutes(fastify: FastifyInstance) {
 
       const animalTypesQuery = animal_type_id
         ? Prisma.sql`AND public.animal_breeds.animal_type_id = ${animal_type_id}::int`
+        : Prisma.sql``;
+
+      const genderQuery = gender
+        ? Prisma.sql`AND public.pets.gender = ${gender}::int`
         : Prisma.sql``;
 
       const orderByWithDirection = `${orderByMapper[order_by]} ${direction}`;
@@ -92,13 +97,16 @@ export function petRoutes(fastify: FastifyInstance) {
                 'name', public.animal_types.name
             )
         ) as breed,
-        ST_Distance(ST_MakePoint(${longitude}, ${latitude})::geography,
+        ST_Distance(ST_MakePoint(${Number(longitude)}, ${Number(
+        latitude
+      )})::geography,
         ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography, true) AS distance
         FROM public.pets 
         INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
         ${breedsQuery}
         ${animalTypesQuery}
         ${statusQuery}
+        ${genderQuery}
         LEFT JOIN public.animal_types ON public.animal_types.id = public.animal_breeds.animal_type_id
         LEFT JOIN public.pet_images ON public.pet_images.pet_id = public.pets.id
         WHERE ST_DWithin(
@@ -253,41 +261,101 @@ export function petRoutes(fastify: FastifyInstance) {
     const direction = "DESC";
     const radius = 10000;
 
-    // const statusQuery = Prisma.sql`AND public.pets.status = ${status}`;
+    const statusQuery = Prisma.sql`AND public.pets.status = ${status}`;
 
-    // const petsIdQuery =
-    //   foundIdPetMatchesByLostIds.length > 0
-    //     ? Prisma.sql`AND NOT public.pets.id = ANY(${foundIdPetMatchesByLostIds}::uuid[])`
-    //     : Prisma.sql``;
+    const petsIdQuery =
+      foundIdPetMatchesByLostIds.length > 0
+        ? Prisma.sql`AND NOT public.pets.id = ANY(${foundIdPetMatchesByLostIds}::uuid[])`
+        : Prisma.sql``;
 
-    // const breedsQuery = breedIds.length
-    //   ? Prisma.sql`AND public.animal_breeds.id = ANY(${breedIds}::int[])`
-    //   : Prisma.sql``;
+    const breedsQuery = breedIds.length
+      ? Prisma.sql`AND public.animal_breeds.id = ANY(${breedIds}::int[])`
+      : Prisma.sql``;
 
-    // const orderByWithDirection = `${orderByMapper[orderBy]} ${direction}`;
+    const orderByWithDirection = `${orderByMapper[orderBy]} ${direction}`;
 
-    // const orderByQuery = orderBy
-    //   ? Prisma.sql`ORDER BY ${orderByWithDirection}`
-    //   : Prisma.sql``;
+    const orderByQuery = orderBy
+      ? Prisma.sql`ORDER BY ${orderByWithDirection}`
+      : Prisma.sql``;
 
-    // let pets: (pets & {distance: }) = await prisma.$queryRaw`
-    // SELECT *, public.pets.id,
-    // ST_Distance(ST_MakePoint(${longitude}, ${latitude})::geography,
-    // ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography, true) AS distance
-    // FROM public.pets
-    // INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
-    // ${statusQuery}
-    // ${petsIdQuery}
-    // WHERE ST_DWithin(
-    //     ST_MakePoint(${longitude}, ${latitude})::geography,
-    //     ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography,
-    //     ${Number(radius)}
-    // )
-    // ${orderByQuery}
-    // `;
+    let pets: any = await prisma.$queryRaw`
+    SELECT *, public.pets.id,
+    ST_Distance(ST_MakePoint(${longitude}, ${latitude})::geography,
+    ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography, true) AS distance
+    FROM public.pets
+    INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
+    ${statusQuery}
+    ${petsIdQuery}
+    WHERE ST_DWithin(
+        ST_MakePoint(${longitude}, ${latitude})::geography,
+        ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography,
+        ${Number(radius)}
+    )
+    ${orderByQuery}
+    `;
+
+    const createMatchedPetImagesPayload =
+      pets?.map((_pet: pets & { distance: string }) => {
+        return {
+          match_percentage: 100.0,
+          distance: _pet.distance,
+          found_pet_id: pet.id,
+          lost_pet_id: _pet.id,
+        };
+      }) || [];
+
+    // const createdPetImages = await prisma.pet_matches.createMany({
+    //   data: createMatchedPetImagesPayload,
+    // });
 
     reply.send({
-      hello: "hello",
+      pets,
     });
   });
+
+  enum PetMatchPossibleType {
+    PENDING = 0,
+    MATCH = 1,
+    POSSIBLE = 2,
+    NO_MATCH = 3,
+  }
+
+  enum PetMatchPossibleTypeMessage {
+    MATCH = "Hi, I think you found my pet",
+    POSSIBLE = "Hi, this looks like a possible match",
+  }
+
+  fastify.put(
+    "/api/v1/pet-match",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      let { id, type } = request.query as {
+        id: string;
+        type: number;
+      };
+
+      await prisma.pet_matches.update({
+        where: {
+          id,
+        },
+        data: {
+          type,
+        },
+      });
+
+      let data = await prisma.pet_matches.findFirst({
+        where: {
+          id,
+        },
+      });
+
+      // TODO: Send message to founder depending on the type set
+      await prisma.messages.create({
+        data: {
+          pet_match_id: id,
+          lost_pet_id: data?.lost_pet_id,
+          found_pet_id: data?.found_pet_id,
+        },
+      });
+    }
+  );
 }

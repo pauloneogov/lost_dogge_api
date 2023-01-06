@@ -1,0 +1,182 @@
+// @ts-nocheck
+import { FastifyReply } from "fastify";
+import { FastifyInstance, FastifyRequest } from "fastify";
+import Stripe from "stripe";
+import { prisma } from "../prisma";
+import "../helpers/bigInt.js";
+
+export function stripeRoutes(fastify: FastifyInstance) {
+  const stripeEndpoint = fastify?.config.STRIPE_WEBHOOK;
+  const stripeClient = new Stripe(fastify?.config.STRIPE_SECRET, {
+    apiVersion: "2022-11-15",
+  });
+
+  type checkoutSessionRequestType = {
+    price_id: string;
+    quantity: number;
+    success_url: string;
+    cancel_url: string;
+    pet_id: string;
+    user_id: string;
+  };
+
+  fastify.post(
+    "/api/v1/checkout-session",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      let { price_id, pet_id, quantity, user_id, success_url, cancel_url } =
+        request.body as checkoutSessionRequestType;
+      let paymentResponse = null;
+
+      let stripeProduct = await prisma.stripe_products.findFirst({
+        where: {
+          stripe_price_id: price_id,
+        },
+      });
+
+      if (!stripeProduct)
+        return reply.status(400).send({ message: "No stripe product found" });
+
+      try {
+        paymentResponse = await prisma.payments.create({
+          data: {
+            pet_id,
+            quantity: Number(quantity) || 1,
+            stripe_product_id: stripeProduct?.id,
+          },
+        });
+      } catch (error) {
+        return reply.status(500).send({ message: "Unexpected error" });
+      }
+
+      let user = await prisma.users.findUnique({
+        where: {
+          id: user_id,
+        },
+      });
+
+      try {
+        const session = await stripeClient.checkout.sessions.create({
+          line_items: [
+            {
+              price: price_id,
+              quantity: quantity,
+            },
+          ],
+          automatic_tax: {
+            enabled: true,
+          },
+          payment_intent_data: {
+            metadata: {
+              client_reference_id: paymentResponse?.id,
+              user_id: user?.id,
+            },
+          },
+          client_reference_id: paymentResponse?.id,
+          customer_email: user?.email!,
+          mode: "payment",
+          custom_text: {
+            submit: {
+              message: `Daily Ads for ${quantity} days`,
+            },
+          },
+          metadata: {
+            client_reference_id: stripeProduct?.id,
+            user_id: user?.id,
+          },
+          success_url: success_url,
+          cancel_url: cancel_url,
+        });
+
+        console.log(session);
+
+        return reply.send({ stripe_url: session.url });
+      } catch (error) {
+        return reply.status(500).send(error);
+      }
+    }
+  );
+
+  fastify.post(
+    "/api/v1/stripe-hook",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      let event = request.body;
+
+      if (stripeEndpoint) {
+        const signature = request.headers["stripe-signature"];
+
+        try {
+          event = stripeClient.webhooks.constructEvent(
+            request.rawBody,
+            signature,
+            stripeEndpoint
+          );
+        } catch (err) {
+          console.log(`⚠️  Webhook signature verification failed.`, err);
+          return reply.status(400);
+        }
+      }
+
+      const paymentIntent = event?.data.object;
+
+      switch (event?.type) {
+        // case "checkout.session.completed":
+        //   // Then define and call a method to handle the successful payment intent.
+        //   await handlePaymentIntentCompleted(paymentIntent);
+        //   break;
+
+        case "payment_intent.succeeded":
+          // Then define and call a method to handle the successful payment intent.
+          await handlePaymentIntentSucceeded(paymentIntent);
+          break;
+        case "checkout.session.expired":
+          await handlePaymentIntentFailed(paymentIntent);
+        case "payment_intent.payment_failed":
+          // Then define and call a method to handle the successful attachment of a PaymentMethod.
+          // handlePaymentIntentFailed(paymentMethod);
+          break;
+        default:
+          // Unexpected event type
+          console.log(`Unhandled event type ${event.type}.`);
+      }
+
+      return reply.send("success");
+    }
+  );
+
+  const handlePaymentIntentSucceeded = async (paymentIntent) => {
+    console.log("paymentIntent", paymentIntent.charges.data);
+    // CHECK IF THE PAYMENT INTENT status key is success or failed
+    try {
+      await prisma.payments.update({
+        where: {
+          id: paymentIntent?.metadata?.client_reference_id,
+        },
+        data: {
+          status: 1,
+          stripe_payment_intent_id: paymentIntent?.id,
+          receipt_url: paymentIntent?.charges?.data[0].receipt_url,
+        },
+      });
+
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handlePaymentIntentFailed = async (paymentIntent) => {
+    const paymentIntentId =
+      paymentIntent.payment_intent || paymentIntent.id || "";
+    if (paymentIntentId) {
+      await prisma.payments.update({
+        where: {
+          id: paymentIntent?.metadata?.client_reference_id,
+        },
+        data: {
+          status: 2,
+          stripe_payment_intent_id: paymentIntentId,
+        },
+      });
+    }
+  };
+
+}
