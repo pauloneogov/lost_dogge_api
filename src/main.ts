@@ -5,7 +5,6 @@ import { randomBytes } from "crypto";
 import { registerRoutes } from "./routes";
 import { prisma } from "./prisma";
 import fastifyEnv from "@fastify/env";
-import "flowbite";
 // @ts-ignore
 import axiosClient from "fastify-axios";
 
@@ -91,7 +90,10 @@ const main = async () => {
   registerRoutes(server);
 
   try {
-    await server.listen(process.env.PORT || 8080, "0.0.0.0");
+    await server.listen({ port: 8080 });
+    // await server.listen({
+    //   port: process.env.PORT || 8080,
+    // });
   } catch (err) {
     // server.log.error(err);
     await prisma.$disconnect();

@@ -191,11 +191,10 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       let adCreativeFields = [];
       let adCreativeParams = {
         name: _pet.id,
-        call_to_action_type: "OPEN_LINK",
         object_story_spec: {
-          page_id: facebookAppId,
+          page_id: facebookPageId,
           link_data: {
-            link: `https://lost-dogge.com/pet/lost/${_pet.id}`,
+            link: `http://lostdoggo.com`,
             picture: _pet.pet_images[0].url,
           },
         },
