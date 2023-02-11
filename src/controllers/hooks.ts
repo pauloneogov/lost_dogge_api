@@ -14,10 +14,19 @@ export function hookRoutes(fastify: FastifyInstance) {
     }
   );
 
-  const handleEmailPetCreation = (payload) => {
+  fastify.post(
+    "/api/v1/hook/update-pet",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      let event = request.body;
+      console.log(request);
+      console.log(event);
+    }
+  );
 
-  }
- 
+  const sendFoundPetEmail = (payload) => {};
+
+  const sendLostPetEmail = (payload) => {};
+
   //   {
   //     type: 'INSERT',
   //     table: 'pets',
