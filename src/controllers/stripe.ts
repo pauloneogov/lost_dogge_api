@@ -23,7 +23,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/api/v1/checkout-session",
     async (request: FastifyRequest, reply: FastifyReply) => {
-      let { price_id, pet_id, quantity, user_id, success_url, cancel_url } =
+      let { price_id, pet_id, user_id, success_url, cancel_url } =
         request.body as checkoutSessionRequestType;
       let paymentResponse = null;
 
@@ -40,11 +40,12 @@ export function stripeRoutes(fastify: FastifyInstance) {
         paymentResponse = await prisma.payments.create({
           data: {
             pet_id,
-            quantity: Number(quantity) || 1,
+            quantity: 1,
             stripe_product_id: stripeProduct?.id,
           },
         });
       } catch (error) {
+        console.log(error);
         return reply.status(500).send({ message: "Unexpected error" });
       }
 
@@ -59,7 +60,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
           line_items: [
             {
               price: price_id,
-              quantity: quantity,
+              quantity: 1,
             },
           ],
           automatic_tax: {
@@ -76,7 +77,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
           mode: "payment",
           custom_text: {
             submit: {
-              message: `Daily Ads for ${quantity} days`,
+              message: `Daily Ads`,
             },
           },
           metadata: {
@@ -157,7 +158,6 @@ export function stripeRoutes(fastify: FastifyInstance) {
           receipt_url: paymentIntent?.charges?.data[0].receipt_url,
         },
       });
-
     } catch (error) {
       console.log(error);
     }
@@ -178,5 +178,4 @@ export function stripeRoutes(fastify: FastifyInstance) {
       });
     }
   };
-
 }
