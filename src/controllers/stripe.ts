@@ -25,6 +25,8 @@ export function stripeRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       let { price_id, pet_id, user_id, success_url, cancel_url } =
         request.body as checkoutSessionRequestType;
+
+      console.log(request.body);
       let paymentResponse = null;
 
       let stripeProduct = await prisma.stripe_products.findFirst({
@@ -55,6 +57,8 @@ export function stripeRoutes(fastify: FastifyInstance) {
         },
       });
 
+      console.log(success_url);
+
       try {
         const session = await stripeClient.checkout.sessions.create({
           line_items: [
@@ -84,11 +88,9 @@ export function stripeRoutes(fastify: FastifyInstance) {
             client_reference_id: stripeProduct?.id,
             user_id: user?.id,
           },
-          success_url: success_url,
-          cancel_url: cancel_url,
+          success_url: `${success_url}/payment/${paymentResponse.id}/process?pet_id=${pet_id}`,
+          cancel_url: `${cancel_url}/payment/${paymentResponse.id}/process?pet_id=${pet_id}`,
         });
-
-        console.log(session);
 
         return reply.send({ stripe_url: session.url });
       } catch (error) {
