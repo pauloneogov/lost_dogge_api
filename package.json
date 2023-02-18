@@ -13,7 +13,7 @@
     "build": "tsc",
     "dev": "ts-node src/main.ts",
     "dev:watch": "nodemon src/main.ts",
-    "heroku-postbuild": "nodemon src/main.ts"
+    "heroku-postbuild": "ts-node src/main.ts"
   },
   "prisma": {
     "seed": "ts-node src/seed.ts"
