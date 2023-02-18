@@ -181,7 +181,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
     }
   };
 
-  const getFirstPaymentSuccess = (petId: string) => {
+  const getFirstPaymentSuccess = async (petId: string) => {
     const payment = await prisma.payments.findFirst({
       where: {
         pet_id: petId,
