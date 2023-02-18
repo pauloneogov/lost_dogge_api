@@ -19,6 +19,10 @@
   "prisma": {
     "seed": "ts-node src/seed.ts"
   },
+  "engine": {
+    "node": "18.12.0",
+    "npm": "8.19.3"
+  },
   "devDependencies": {
     "@types/jsonwebtoken": "^8.5.8",
     "@types/node": "^17.0.23",
