@@ -290,7 +290,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
   fastify.scheduler.addSimpleIntervalJob(job);
 
-  const findAllFailedAdCreations = () => {
+  const findAllFailedAdCreations = async () => {
     // Get all payments made that are not have a no subscriptions
     try {
       const payments = await prisma.payments.findMany({
@@ -308,7 +308,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
   // FOR IMPRESSIONS
   // GET ALL ADS IMPRESSIONS AND CLICK THROUGH
-  const findAllRunningAds = () => {
+  const findAllRunningAds = async () => {
     // Get all adsets which payments are running and not ended
     try {
       const adsets = await prisma.fb_adsets.findMany({
@@ -337,7 +337,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
   // FOR ARCHIVING ADS BASED ON ADS FOUND
   // ARCHIVE ADS
-  const findAllRunningAdsPetsFound = () => {
+  const findAllRunningAdsPetsFound = async () => {
     try {
       const adsets = await prisma.fb_adsets.findMany({
         where: {
