@@ -26,7 +26,12 @@ export function stripeRoutes(fastify: FastifyInstance) {
       let { price_id, pet_id, user_id, success_url, cancel_url } =
         request.body as checkoutSessionRequestType;
 
-      console.log(request.body);
+      let payment = getFirstPaymentSuccess(pet_id);
+      if (!payment)
+        return reply
+          .status(400)
+          .send({ message: "Payment has been made already" });
+
       let paymentResponse = null;
 
       let stripeProduct = await prisma.stripe_products.findFirst({
@@ -174,5 +179,16 @@ export function stripeRoutes(fastify: FastifyInstance) {
         },
       });
     }
+  };
+
+  const getFirstPaymentSuccess = (petId: string) => {
+    const payment = await prisma.payments.findFirst({
+      where: {
+        pet_id: petId,
+        status: 1,
+      },
+    });
+
+    return payment;
   };
 }
