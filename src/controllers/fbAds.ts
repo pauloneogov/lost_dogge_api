@@ -274,119 +274,107 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     }
   );
 
-  const task = new AsyncTask(
-    "Get latest impressions & clicks",
-    () => {
-      return db.pollForSomeData().then((result) => {
-        /* continue the promise chain */
-      });
-    },
-    (err: Error) => {
-      console.log(err);
-      /* handle error here */
-    }
-  );
-  const job = new SimpleIntervalJob({ seconds: 20 }, task);
+  // const task = new AsyncTask(
+  //   "Get latest impressions & clicks",
+  //   () => {
+  //     return db.pollForSomeData().then((result) => {
+  //       /* continue the promise chain */
+  //     });
+  //   },
+  //   (err: Error) => {
+  //     console.log(err);
+  //     /* handle error here */
+  //   }
+  // );
+  // const job = new SimpleIntervalJob({ seconds: 20 }, task);
 
-  fastify.scheduler.addSimpleIntervalJob(job);
+  // fastify.scheduler.addSimpleIntervalJob(job);
 
-  const findAllFailedAdCreations = async () => {
-    // Get all payments made that are not have a no subscriptions
-    try {
-      const payments = await prisma.payments.findMany({
-        where: {
-          status: 1,
-          adset_id: null,
-        },
-      });
+  // const findAllFailedAdCreations = async () => {
+  //   // Get all payments made that are not have a no subscriptions
+  //   const payments = await prisma.payments.findMany({
+  //     where: {
+  //       status: 1,
+  //       adset_id: null,
+  //     },
+  //   });
 
-      return payments || [];
-    } catch (error) {
-      throw error;
-    }
-  };
+  //   return payments || [];
+  // };
 
   // FOR IMPRESSIONS
   // GET ALL ADS IMPRESSIONS AND CLICK THROUGH
-  const findAllRunningAds = async () => {
-    // Get all adsets which payments are running and not ended
-    try {
-      const adsets = await prisma.fb_adsets.findMany({
-        where: {
-          payments: {
-            where: {
-              status: 1,
-            },
-          },
-          // WHERE
-          start_time: {
-            gte: new Date(),
-          },
-          end_time: {
-            lte: new Date(),
-          },
-          status: 1,
-        },
-      });
+  // const findAllRunningAds = async () => {
+  // Get all adsets which payments are running and not ended
+  //   const adsets = await prisma.fb_adsets.findMany({
+  //     where: {
+  //       payments: {
+  //         where: {
+  //           status: 1,
+  //         },
+  //       },
+  //       // WHERE
+  //       start_time: {
+  //         gte: new Date(),
+  //       },
+  //       end_time: {
+  //         lte: new Date(),
+  //       },
+  //       status: 1,
+  //     },
+  //   });
 
-      return adsets || [];
-    } catch (error) {
-      throw error;
-    }
-  };
+  //   return adsets || [];
+  // };
 
   // FOR ARCHIVING ADS BASED ON ADS FOUND
   // ARCHIVE ADS
-  const findAllRunningAdsPetsFound = async () => {
-    try {
-      const adsets = await prisma.fb_adsets.findMany({
-        where: {
-          payments: {
-            where: {
-              status: 1,
-              pets: {
-                where: {
-                  status: 3,
-                },
-              },
-            },
-          },
-          // WHERE
-          start_time: {
-            gte: new Date(),
-          },
-          end_time: {
-            lte: new Date(),
-          },
-          status: 1,
-        },
-      });
+  // const findAllRunningAdsPetsFound = async () => {
+  //   const adsets = await prisma.fb_adsets.findMany({
+  //     where: {
+  //       payments: {
+  //         where: {
+  //           status: 1,
+  //           pets: {
+  //             where: {
+  //               status: 3,
+  //             },
+  //           },
+  //         },
+  //       },
+  //       // WHERE
+  //       start_time: {
+  //         gte: new Date(),
+  //       },
+  //       end_time: {
+  //         lte: new Date(),
+  //       },
+  //       status: 1,
+  //     },
+  //   });
 
-      return adsets || [];
-    } catch (error) {
-      throw error;
-    }
-  };
+  //   return adsets || [];
+  // };
 
   // FOR ARCHIVING ADS BASED ON END_TIME
-  const findAllRunningAdsThatAreEnded = () => {
-    // Get all adset which payments are running and are ended
-    try {
-    } catch (error) {
-      throw error;
-    }
-  };
+  // const findAllRunningAdsThatAreEnded = () => {
+  //   // Get all adset which payments are running and are ended
+  //   try {
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // };
 
-  const findAllPendingAds = () => {
-    const adsets = await prisma.fb_adsets.findMany({
-      where: {
-        payments: {
-          where: {
-            status: 1,
-          },
-        },
-        status: 0,
-      },
-    });
-  };
+  // const findAllPendingAds = () => {
+  //   const adsets = await prisma.fb_adsets.findMany({
+  //     where: {
+  //       payments: {
+  //         where: {
+  //           status: 1,
+  //         },
+  //       },
+  //       status: 0,
+  //     },
+  //   });
+  // };
 }
