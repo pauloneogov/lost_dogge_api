@@ -93,7 +93,8 @@ const main = async () => {
   registerRoutes(server);
 
   try {
-    await server.listen({ port: 8080, host: "0.0.0.0" });
+    // @ts-ignore
+    await server.listen({ port: process.env.PORT || 8080, host: "0.0.0.0" });
     // await server.listen({
     //   port: process.env.PORT || 8080,
     // });
