@@ -31,6 +31,7 @@
     "@fastify/env": "^4.2.0",
     "@fastify/formbody": "^7.4.0",
     "@fastify/multipart": "^7.3.0",
+    "@fastify/schedule": "^4.1.0",
     "@fastify/static": "^6.6.0",
     "@prisma/client": "4.3.1",
     "dotenv": "^16.0.0",
@@ -45,6 +46,7 @@
     "fastify-webhook": "^4.0.1",
     "json-bigint": "^1.0.0",
     "jsonwebtoken": "^8.5.1",
-    "stripe": "^11.4.0"
+    "stripe": "^11.4.0",
+    "toad-scheduler": "^2.2.0"
   }
 }

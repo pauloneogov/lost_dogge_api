@@ -5,6 +5,7 @@ import { randomBytes } from "crypto";
 import { registerRoutes } from "./routes";
 import { prisma } from "./prisma";
 import fastifyEnv from "@fastify/env";
+const { fastifySchedulePlugin } = require("@fastify/schedule");
 // @ts-ignore
 import axiosClient from "fastify-axios";
 
@@ -49,6 +50,8 @@ const main = async () => {
     genReqId: () => randomBytes(8).toString("hex"),
     logger: true,
   });
+
+  server.register(fastifySchedulePlugin);
 
   server.register(fastifyEnv, {
     dotenv: true, // will read .env in root folder

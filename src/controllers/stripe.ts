@@ -64,7 +64,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
           line_items: [
             {
               price: price_id,
-              quantity: 1,
+              quantity: stripeProduct.quantity,
             },
           ],
           automatic_tax: {
@@ -122,11 +122,6 @@ export function stripeRoutes(fastify: FastifyInstance) {
       const paymentIntent = event?.data.object;
 
       switch (event?.type) {
-        // case "checkout.session.completed":
-        //   // Then define and call a method to handle the successful payment intent.
-        //   await handlePaymentIntentCompleted(paymentIntent);
-        //   break;
-
         case "payment_intent.succeeded":
           // Then define and call a method to handle the successful payment intent.
           await handlePaymentIntentSucceeded(paymentIntent);
@@ -135,7 +130,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
           await handlePaymentIntentFailed(paymentIntent);
         case "payment_intent.payment_failed":
           // Then define and call a method to handle the successful attachment of a PaymentMethod.
-          // handlePaymentIntentFailed(paymentMethod);
+          await handlePaymentIntentFailed(paymentMethod);
           break;
         default:
           // Unexpected event type

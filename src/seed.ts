@@ -7,11 +7,11 @@ const prisma = new PrismaClient({
 let breedsData = require("./json/breed.js");
 
 async function main() {
-  await prisma.lost_meta.deleteMany()
-  await prisma.pet_images.deleteMany()
-  await prisma.pets.deleteMany()
-  await prisma.animal_breeds.deleteMany()
-  await prisma.animal_types.deleteMany()
+  await prisma.lost_meta.deleteMany();
+  await prisma.pet_images.deleteMany();
+  await prisma.pets.deleteMany();
+  await prisma.animal_breeds.deleteMany();
+  await prisma.animal_types.deleteMany();
 
   await prisma.animal_types.createMany({
     data: [{ name: "Cat" }, { name: "Dog" }],
@@ -49,7 +49,7 @@ async function main() {
       description: faker.lorem.paragraph(),
       weight: faker.datatype.number({ max: 20 }),
       height: faker.datatype.number({ max: 20 }),
-      gender: faker.datatype.boolean(),
+      gender: faker.datatype.boolean() ? 1 : 0,
       breed_id:
         animalBreeds[faker.datatype.number({ max: animalBreeds.length - 1 })]
           .id,

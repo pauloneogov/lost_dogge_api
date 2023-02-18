@@ -344,6 +344,13 @@
     secure-json-parse "^2.4.0"
     stream-wormhole "^1.1.0"
 
+"@fastify/schedule@^4.1.0":
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/@fastify/schedule/-/schedule-4.1.0.tgz#bfef7d685d89dcf28352f6ae33437d1f6e472f97"
+  integrity sha512-2t/oB5jCEVZLuSmyZ+awV9Q0VxyokePQTv1SD6cpShhWlViJVf/tlqDaijBCq34IxE3q7q4I1KHWqHUsaauIiw==
+  dependencies:
+    fastify-plugin "^4.0.0"
+
 "@fastify/static@^6.6.0":
   version "6.6.0"
   resolved "https://registry.yarnpkg.com/@fastify/static/-/static-6.6.0.tgz#763244583abf7a4734bff7b1d1aef0ef445393fb"
@@ -3010,6 +3017,11 @@ to-regex-range@^5.0.1:
   integrity sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==
   dependencies:
     is-number "^7.0.0"
+
+toad-scheduler@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/toad-scheduler/-/toad-scheduler-2.2.0.tgz#e24dd009f3a5566a89555b0e811f1e56af528395"
+  integrity sha512-o/3na7CMVfW40x8H/Vw078GNIR6F7jNmPnuSRY2yVqFIPXRrQttcfRlkQk0dwFiw7fQCqpCGXoC/vo7QtoQMhw==
 
 toidentifier@1.0.1:
   version "1.0.1"

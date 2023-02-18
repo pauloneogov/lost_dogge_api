@@ -25,6 +25,7 @@ model animal_types {
   name          String?         @db.VarChar
   description   String?         @db.VarChar
   animal_breeds animal_breeds[]
+  pets          pets[]
 }
 
 model customers {
@@ -54,26 +55,28 @@ model pet_subscriptions {
 model pets {
   id                                         String              @id(map: "pets_1_pkey") @default(dbgenerated("extensions.uuid_generate_v4()")) @db.Uuid
   created_at                                 DateTime?           @default(now()) @db.Timestamptz(6)
-  name                                       String?             @db.VarChar
-  description                                String?             @db.VarChar
+  name                                       String?
+  description                                String?
   weight                                     Int?                @db.SmallInt
   height                                     Int?                @db.SmallInt
   breed_id                                   BigInt?
   is_vaccinated                              Boolean?
   status                                     Int?                @db.SmallInt
-  contact_number                             String?             @db.VarChar
-  email                                      String?             @db.VarChar
-  instagram                                  String?             @db.VarChar
-  facebook                                   String?             @db.VarChar
-  twitter                                    String?             @db.VarChar
+  contact_number                             String?
+  email                                      String?
+  instagram                                  String?
+  facebook                                   String?
+  twitter                                    String?
   is_deleted                                 Boolean?
   user_id                                    String?             @db.Uuid
-  lost_date                                  DateTime?           @db.Timestamp(6)
-  found_date                                 DateTime?           @db.Timestamp(6)
+  lost_date                                  DateTime?           @db.Timestamptz(6)
+  found_date                                 DateTime?           @db.Timestamptz(6)
   longitude                                  Float?
   latitude                                   Float?
   gender                                     Int?                @default(0) @db.SmallInt
   address                                    String?
+  animal_type_id                             BigInt?
+  animal_types                               animal_types?       @relation(fields: [animal_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   animal_breeds                              animal_breeds?      @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                                      users?              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lost_meta                                  lost_meta[]
@@ -185,6 +188,8 @@ model payments {
   stripe_product_id        String?          @db.Uuid
   receipt_url              String?
   stripe_payment_intent_id String?
+  adset_id                 String?          @db.Uuid
+  fb_adsets                fb_adsets?       @relation(fields: [adset_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   pets                     pets?            @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   stripe_products          stripe_products? @relation(fields: [stripe_product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
@@ -195,6 +200,8 @@ model stripe_products {
   name            String?
   description     String?
   stripe_price_id String?
+  key             String?    @default("")
+  quantity        Int?       @db.SmallInt
   payments        payments[]
 }
 
@@ -212,7 +219,9 @@ model fb_adsets {
   fb_ad_id          String?       @db.VarChar
   reach_count       Decimal?      @db.Decimal
   impression_count  Decimal?      @db.Decimal
+  fb_ad_creative_id String?       @db.VarChar
   fb_campaigns      fb_campaigns? @relation(fields: [campaign_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payments          payments[]
 }
 
 model fb_campaigns {
