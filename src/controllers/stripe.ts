@@ -26,11 +26,12 @@ export function stripeRoutes(fastify: FastifyInstance) {
       let { price_id, pet_id, user_id, success_url, cancel_url } =
         request.body as checkoutSessionRequestType;
 
-      let payment = getFirstPaymentSuccess(pet_id);
-      if (!payment)
+      let payment = await getFirstPaymentSuccess(pet_id);
+      if (payment) {
         return reply
           .status(400)
           .send({ message: "Payment has been made already" });
+      }
 
       let paymentResponse = null;
 

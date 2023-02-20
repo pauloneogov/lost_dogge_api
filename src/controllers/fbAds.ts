@@ -156,6 +156,20 @@ export function fbAdRoutes(fastify: FastifyInstance) {
           fb_adset_id: adSet?.id,
         },
       });
+
+      if (!dbFbAdset) throw Error({ message: "DB - FB Adset failed" });
+
+      const payment = await prisma.payments.update({
+        where: {
+          id: _paymentId,
+        },
+        data: {
+          fb_adsets: dbFbAdset.id,
+        },
+      });
+
+      if (!payment) throw Error({ message: "DB - Payment failed to update" });
+
       console.log(
         "🚀 ~ file: fbAds.ts:139 ~ fbAdRoutes ~ dbFbAdset",
         dbFbAdset
@@ -221,6 +235,20 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         adParams
       );
 
+      if (!ad) throw Error({ message: "Ad failed to create" });
+
+      const updatedDbFbAdset = await prisma.fb_adsets.update({
+        where: {
+          id: _adset.id,
+        },
+        data: {
+          fb_ad_id: ad.id,
+        },
+      });
+
+      if (!updatedDbFbAdset)
+        throw Error({ message: "DB - Update fb adset failed" });
+
       logApiCallResult("ads api call complete.", ad);
     } catch (error) {
       console.log("🚀 ~ file: fbAds.ts:212 ~ createAd ~ error", error);
@@ -233,6 +261,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     const payment = await getPayment(_paymentId);
 
     if (payment?.status !== 1) throw new Error("Payment has not been made");
+    if (payment?.stripe_product_id) throw new Error("Ad already created");
 
     const fbCampaignCount = await prisma.fb_campaigns.aggregate({
       _count: {
