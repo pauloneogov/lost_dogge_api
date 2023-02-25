@@ -4,7 +4,6 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 const bizSdk = require("facebook-nodejs-business-sdk");
 const { SimpleIntervalJob, AsyncTask } = require("toad-scheduler");
 const AdAccount = bizSdk.AdAccount;
-const Campaign = bizSdk.Campaign;
 const Ad = bizSdk.Ad;
 
 export function fbAdRoutes(fastify: FastifyInstance) {
