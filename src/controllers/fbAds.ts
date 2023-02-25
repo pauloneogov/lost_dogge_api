@@ -5,11 +5,10 @@ const bizSdk = require("facebook-nodejs-business-sdk");
 const { SimpleIntervalJob, AsyncTask } = require("toad-scheduler");
 const AdAccount = bizSdk.AdAccount;
 const Campaign = bizSdk.Campaign;
+const Ad = bizSdk.Ad;
 
 export function fbAdRoutes(fastify: FastifyInstance) {
-  const facebookAppId = fastify?.config.FACEBOOK_APP_ID;
   const facebookAccessToken = fastify?.config.FACEBOOK_ACCESS_TOKEN;
-  const facebookAccessSecret = fastify?.config.FACEBOOK_ACCESS_SECRET;
   const facebookAdAccountId = fastify?.config.FACEBOOK_AD_ACCOUNT_ID;
   const facebookPageId = fastify?.config.FACEBOOK_PAGE_ID;
 
@@ -71,7 +70,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
   const createAdSet = async (
     _pet: Object,
-    _paymentId: string,
+    _payment: Object,
     _fbCampaignCount: string,
     _fbAdSetCount: string
   ) => {
@@ -102,10 +101,10 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
     let adsetFields = [];
     let adsetParams = {
-      name: _paymentId,
+      name: _payment.id,
       optimization_goal: "LINK_CLICKS",
       billing_event: "IMPRESSIONS",
-      daily_budget: 700,
+      daily_budget: 600,
       campaign_id: fbCampaignId,
       status: "PAUSED",
       bid_strategy: "LOWEST_COST_WITH_BID_CAP",
@@ -152,23 +151,28 @@ export function fbAdRoutes(fastify: FastifyInstance) {
           daily_budget: adsetParams.daily_budget,
           campaign_id: campaign?.id,
           targeting: adsetParams.targeting,
-          status: adsetParams.status,
+          status: "PENDING REVIEW",
           fb_adset_id: adSet?.id,
         },
       });
+      console.log(
+        "🚀 ~ file: fbAds.ts:159 ~ fbAdRoutes ~ dbFbAdset:",
+        dbFbAdset
+      );
 
-      if (!dbFbAdset) throw Error({ message: "DB - FB Adset failed" });
+      if (!dbFbAdset) throw new Error({ message: "DB - FB Adset failed" });
 
       const payment = await prisma.payments.update({
         where: {
-          id: _paymentId,
+          id: _payment.id,
         },
         data: {
-          fb_adsets: dbFbAdset.id,
+          adset_id: dbFbAdset.id,
         },
       });
 
-      if (!payment) throw Error({ message: "DB - Payment failed to update" });
+      if (!payment)
+        throw new Error({ message: "DB - Payment failed to update" });
 
       console.log(
         "🚀 ~ file: fbAds.ts:139 ~ fbAdRoutes ~ dbFbAdset",
@@ -221,6 +225,8 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
       logApiCallResult("ad creative api call complete.", adCreative);
 
+      console.log("adset", _adset);
+
       let adFields = [];
       let adParams = {
         name: _pet.id,
@@ -230,12 +236,14 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         status: "PAUSED",
       };
 
-      const ad = new AdAccount(facebookAdAccountId).createAd(
+      const ad = await new AdAccount(facebookAdAccountId).createAd(
         adFields,
         adParams
       );
 
-      if (!ad) throw Error({ message: "Ad failed to create" });
+      console.log(ad);
+
+      if (!ad) throw new Error({ message: "Ad failed to create" });
 
       const updatedDbFbAdset = await prisma.fb_adsets.update({
         where: {
@@ -246,8 +254,12 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         },
       });
 
+      console.log(updatedDbFbAdset);
+
       if (!updatedDbFbAdset)
         throw Error({ message: "DB - Update fb adset failed" });
+
+      return ad;
 
       logApiCallResult("ads api call complete.", ad);
     } catch (error) {
@@ -261,7 +273,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     const payment = await getPayment(_paymentId);
 
     if (payment?.status !== 1) throw new Error("Payment has not been made");
-    if (payment?.stripe_product_id) throw new Error("Ad already created");
+    if (payment?.adset_id) throw new Error("Ad already created");
 
     const fbCampaignCount = await prisma.fb_campaigns.aggregate({
       _count: {
@@ -281,15 +293,21 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
     const adset = await createAdSet(
       pet,
-      _paymentId,
+      payment,
       fbCampaignCount,
       fbAdSetCount
     );
+    console.log("🚀 ~ file: fbAds.ts:290 ~ createFbAdFlow ~ adset:", adset);
+
     const ad = await createAd(adset, pet);
+
+    console.log(adset);
+    console.log(ad);
 
     return {
       ad,
       adset,
+      dbFbAdset,
     };
   };
 
@@ -331,79 +349,282 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   //   return payments || [];
   // };
 
+  const getFbAdInsights = async (adId: string) => {
+    let adInsightsField = [
+      "ad_id",
+      "impressions",
+      "inline_link_click_ctr",
+      "reach",
+      "interactive_component_tap",
+      "account_id",
+    ];
+    let adInsightsParams = {
+      data_preset: "maximum",
+    };
+
+    let insights = await new Ad(adId).getInsights(
+      adInsightsField,
+      adInsightsParams
+    );
+    return insights.data;
+  };
+
+  const getFbAd = async (adId: string) => {
+    let fbAdField = [
+      "status",
+      "effective_status",
+      "preview_shareable_link",
+      "updated_time",
+    ];
+    let fbAdParams = {};
+    console.log(adId);
+
+    try {
+      let ad = await new Ad(adId).get(fbAdField, fbAdParams);
+      console.log(ad);
+      return ad;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const findAllAdsByStatus = async (status: string) => {
+    const adsets = await prisma.fb_adsets.findMany({
+      where: {
+        // payments: {
+        //   every: {
+        //     status: 1,
+        //   },
+        // },
+        status,
+        fb_ad_id: {
+          not: null,
+        },
+        fb_adset_id: {
+          not: null,
+        },
+      },
+      orderBy: {
+        created_at: "desc",
+      },
+      include: {
+        payments: {
+          include: {
+            stripe_products: {
+              select: {
+                id: true,
+                quantity: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return adsets || [];
+  };
+
+  const runFbAdInsightsTask = async () => {
+    // console.log("hi");
+    let dbFbAdsets = await findAllRunningAds();
+    if (!dbFbAdsets) throw new Error({ message: "No running ads found" });
+    // return;
+
+    for (const dbAdset of dbFbAdsets) {
+      const fbAdSetInsight = await getFbAdInsights(dbAdset.fb_adsets?.fb_ad_id);
+      if (!fbAdSetInsight) continue;
+      console.log(fbAdSetInsight);
+
+      updateAdDetails({
+        adId: _dbFbAdset.id,
+        impressions: fbAdSetInsight.impressions || 0,
+        linkClicks: fbAdSetInsight.inline_link_clicks || 0,
+        reach: fbAdSetInsight.reach || 0,
+      });
+    }
+  };
+
+  const runArchiveFbAdTask = async () => {
+    const dbAdsets = await findAllFoundExpiredAds();
+    if (!dbAdsets || dbAdsets.length === 0)
+      throw new Error({ message: "No adsets found" });
+
+    for (const dbAdset of dbAdsets) {
+      console.log("archived");
+      await archiveAdSet(dbAdset.fb_adsets?.fb_adset_id);
+    }
+
+    console.log(
+      "🚀 ~ file: fbAds.ts:474 ~ runArchiveFbAdTask ~ dbAdsets:",
+      dbAdsets
+    );
+    return dbAdsets;
+    console.log(dbAdsets);
+  };
+
+  const runFbAdStatusCheckTask = async () => {
+    console.log("run fb ad status");
+    const dbAdsets = await findAllAdsByStatus("PAUSED");
+    console.log("db adsets", dbAdsets);
+    if (!dbAdsets || dbAdsets.length === 0)
+      throw new Error({ message: "No adsets found" });
+
+    for (const dbAdset of dbAdsets) {
+      console.log("db adset", dbAdset);
+      const fbAd = await getFbAd(dbAdset.fb_ad_id);
+
+      if (!fbAd) continue;
+
+      console.log("fb ad details", fbAd._data);
+      await updateAdDetails(dbAdset.id, {
+        status: fbAd._data.effective_status,
+        statusCheckDate: new Date(),
+      });
+
+      // TODO: remove effective status for paused
+      if (
+        fbAd._data.effective_status === "ACTIVE" ||
+        fbAd._data.effective_status === "PAUSED"
+      ) {
+        console.log("dbAdsetId", dbAdset.id);
+        const expiryDate = new Date(
+          new Date().setDate(
+            new Date().getDate() +
+              dbAdset.payments[0]?.stripe_products?.quantity
+          )
+        );
+        await updateFbAdsetEndTime(dbAdset.fb_adset_id, expiryDate);
+        await prisma.payments.update({
+          where: {
+            id: dbAdset.payments[0].id,
+          },
+          data: {
+            start_date: new Date(),
+            end_date: new Date(
+              new Date().setDate(
+                new Date().getDate() +
+                  dbAdset.payments[0]?.stripe_products?.quantity
+              )
+            ),
+          },
+        });
+      }
+    }
+  };
+
+  const updateFbAdsetEndTime = async (adSetId: string, expiryDate: Date) => {
+    let fbAdsetField = [""];
+    let fbAdsetParams = {
+      end_time: expiryDate,
+    };
+
+    return await new Ad(adSetId).update(fbAdsetField, fbAdsetParams);
+  };
+
+  const archiveAdSet = async (adSetId: string) => {
+    let fbAdsetField = [""];
+    let fbAdsetParams = {
+      end_time: new Date(),
+      status: "DELETED",
+    };
+    console.log("deletion");
+
+    return await new Ad(adSetId).update(fbAdsetField, fbAdsetParams);
+  };
+
+  // const runArchivedAdSet = async () => {};
+
+  const updateAdDetails = async (
+    adSetId: string,
+    { status, impressions, linkClicks, reach, statusCheckDate }
+  ) => {
+    const adsets = await prisma.fb_adsets.update({
+      where: {
+        id: adSetId,
+      },
+      data: {
+        ...(status && { status }),
+        ...(impressions && { impression_count: impressions }),
+        ...(linkClicks && { link_clicks_count: linkClicks }),
+        ...(reach && { reach_count: reach }),
+        ...(statusCheckDate && { status_check_date: statusCheckDate }),
+      },
+    });
+
+    return adsets || [];
+  };
+
   // FOR IMPRESSIONS
   // GET ALL ADS IMPRESSIONS AND CLICK THROUGH
-  // const findAllRunningAds = async () => {
-  // Get all adsets which payments are running and not ended
-  //   const adsets = await prisma.fb_adsets.findMany({
-  //     where: {
-  //       payments: {
-  //         where: {
-  //           status: 1,
-  //         },
-  //       },
-  //       // WHERE
-  //       start_time: {
-  //         gte: new Date(),
-  //       },
-  //       end_time: {
-  //         lte: new Date(),
-  //       },
-  //       status: 1,
-  //     },
-  //   });
+  const findAllRunningAds = async () => {
+    // Get all adsets which payments are running and not ended
+    const payments = await prisma.payments.findMany({
+      where: {
+        status: 1,
+        fb_adsets: {
+          status: "PAUSED",
+          fb_ad_id: {
+            not: null,
+          },
+          fb_adset_id: {
+            not: null,
+          },
+        },
+        start_date: {
+          lte: new Date(),
+        },
+        end_date: {
+          gte: new Date(),
+        },
+        // status: "PAUSED",
+      },
+      include: {
+        fb_adsets: true,
+      },
+      // TODO: Add the sorting by oldest insight updated
+    });
 
-  //   return adsets || [];
-  // };
+    console.log(payments);
 
-  // FOR ARCHIVING ADS BASED ON ADS FOUND
-  // ARCHIVE ADS
-  // const findAllRunningAdsPetsFound = async () => {
-  //   const adsets = await prisma.fb_adsets.findMany({
-  //     where: {
-  //       payments: {
-  //         where: {
-  //           status: 1,
-  //           pets: {
-  //             where: {
-  //               status: 3,
-  //             },
-  //           },
-  //         },
-  //       },
-  //       // WHERE
-  //       start_time: {
-  //         gte: new Date(),
-  //       },
-  //       end_time: {
-  //         lte: new Date(),
-  //       },
-  //       status: 1,
-  //     },
-  //   });
+    return payments || [];
+  };
 
-  //   return adsets || [];
-  // };
+  const findAllFoundExpiredAds = async () => {
+    // Get all adsets which payments are running and not ended
+    const payments = await prisma.payments.findMany({
+      where: {
+        status: 1,
+        fb_adsets: {
+          status: {
+            in: ["PAUSED", "ACTIVE"],
+          },
+          fb_ad_id: {
+            not: null,
+          },
+          fb_adset_id: {
+            not: null,
+          },
+        },
+        OR: [
+          {
+            end_date: {
+              lte: new Date(),
+            },
+          },
+          {
+            pets: {
+              status: 3,
+            },
+          },
+        ],
+      },
+      include: {
+        fb_adsets: true,
+        pets: true,
+      },
+      // TODO: Add the sorting by oldest insight updated
+    });
 
-  // FOR ARCHIVING ADS BASED ON END_TIME
-  // const findAllRunningAdsThatAreEnded = () => {
-  //   // Get all adset which payments are running and are ended
-  //   try {
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // };
-
-  // const findAllPendingAds = () => {
-  //   const adsets = await prisma.fb_adsets.findMany({
-  //     where: {
-  //       payments: {
-  //         where: {
-  //           status: 1,
-  //         },
-  //       },
-  //       status: 0,
-  //     },
-  //   });
-  // };
+    return payments || [];
+  };
 }

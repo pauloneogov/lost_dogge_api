@@ -5,7 +5,7 @@
   "repository": "https://github.com/satishbabariya/nodejs-prisma-fastify-boilerplate",
   "license": "MIT",
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "prisma db pull && prisma generate",
     "db:pull": "prisma db pull",
     "db:seed": "prisma db seed",
     "db:push": "prisma db push --accept-data-loss",
