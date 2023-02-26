@@ -273,6 +273,8 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
     if (payment?.status !== 1) throw new Error("Payment has not been made");
     if (payment?.adset_id) throw new Error("Ad already created");
+    if (payment?.pets?.status === 0 || payment.pets?.status === 3)
+      throw new Error("Set pet status as lost or found");
 
     const fbCampaignCount = await prisma.fb_campaigns.aggregate({
       _count: {
