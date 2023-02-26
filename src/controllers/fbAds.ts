@@ -306,7 +306,6 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     return {
       ad,
       adset,
-      dbFbAdset,
     };
   };
 
