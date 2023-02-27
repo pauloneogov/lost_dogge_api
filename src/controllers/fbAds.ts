@@ -275,6 +275,8 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     if (payment?.adset_id) throw new Error("Ad already created");
     if (payment?.pets?.status === 0 || payment.pets?.status === 3)
       throw new Error("Set pet status as lost or found");
+    if (payment.pets?.is_deleted)
+      throw new Error("Archived pet cannot create ads");
 
     const fbCampaignCount = await prisma.fb_campaigns.aggregate({
       _count: {
@@ -452,14 +454,17 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     for (const dbAdset of dbAdsets) {
       console.log("archived");
       await archiveAdSet(dbAdset.fb_adsets?.fb_adset_id);
+      await prisma.payments.update({
+        where: {
+          id: dbAdset.payments[0].id,
+        },
+        data: {
+          status: 2,
+        },
+      });
     }
 
-    console.log(
-      "🚀 ~ file: fbAds.ts:474 ~ runArchiveFbAdTask ~ dbAdsets:",
-      dbAdsets
-    );
     return dbAdsets;
-    console.log(dbAdsets);
   };
 
   const runFbAdStatusCheckTask = async () => {
