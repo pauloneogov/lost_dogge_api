@@ -22,6 +22,45 @@ export function petRoutes(fastify: FastifyInstance) {
   };
 
   fastify.get(
+    "/api/v1/pets/latest-activity",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      let { limit = 1 } = request.query as {
+        limit: number;
+      };
+
+      try {
+        let pets = await prisma.$queryRaw`
+        SELECT public.pets.name, public.pets.address, public.pets.status, public.pets.description,
+        json_agg(
+          json_build_object(
+              'url', public.pet_images.url
+          )
+        ) as pet_images,
+        json_build_object(
+            'animal_type_id', public.animal_breeds.animal_type_id,
+            'animal_type', json_build_object(
+                'name', public.animal_types.name
+            )
+        ) as breed
+        FROM public.pets 
+        INNER JOIN public.animal_breeds ON public.animal_breeds.id = public.pets.breed_id
+        LEFT JOIN public.animal_types ON public.animal_types.id = public.animal_breeds.animal_type_id
+        LEFT JOIN public.pet_images ON public.pet_images.pet_id = public.pets.id
+        GROUP BY public.pets.id, public.animal_breeds.id, public.animal_types.id, public.pet_images.id
+        ORDER BY RANDOM()
+        LIMIT ${Number(limit)}
+        `;
+
+        reply.send({
+          pets,
+        });
+      } catch (error) {
+        reply.status(400).send(error);
+      }
+    }
+  );
+
+  fastify.get(
     "/api/v1/pets",
     async (request: FastifyRequest, reply: FastifyReply) => {
       let ipData;

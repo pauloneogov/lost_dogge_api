@@ -13,7 +13,8 @@
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "skipDefaultLibCheck": true
+    "skipDefaultLibCheck": true,
+    "types": ["@nuxtjs/sentry", "vue3-toastify/global"]
   },
   "strict": false,
   "include": ["src/**/*"],

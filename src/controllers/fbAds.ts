@@ -77,7 +77,6 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     let fbCampaignId = null;
     if (_fbAdSetCount?._count?.id % 4500 === 0) {
       campaign = await createFbAdCampaign(_fbCampaignCount);
-
       fbCampaignId = campaign.fb_campaign_id;
     } else {
       const latestAdset = await prisma.fb_adsets.findFirst({
@@ -105,7 +104,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       billing_event: "IMPRESSIONS",
       daily_budget: 600,
       campaign_id: fbCampaignId,
-      status: "PAUSED",
+      status: "ACTIVE",
       bid_strategy: "LOWEST_COST_WITH_BID_CAP",
       bid_amount: 100,
       targeting: {
@@ -114,7 +113,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
             {
               latitude: 45.458311,
               longitude: -72.902611,
-              radius: 5,
+              radius: 10,
               distance_unit: "mile",
             },
           ],
@@ -191,12 +190,14 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
     try {
       let childAttachments = () => {
-        const petImages = _pet.pet_images?.splice(0, 1) || [];
+        const petImages = _pet.pet_images || [];
         const childAttachments = [];
         petImages.forEach((image) => {
           childAttachments.push({
+            name: "Have you seen me?",
             link: `https://lost-dogge.com/pet/lost/${_pet.id}`,
             picture: image.url,
+            description: "I was lost at",
           });
         });
 
@@ -212,10 +213,9 @@ export function fbAdRoutes(fastify: FastifyInstance) {
           page_id: facebookPageId,
           link_data: {
             link: `http://lostdoggo.com`,
-            picture: _pet.pet_images[0].url,
+            child_attachments: childAttachments(_pet),
           },
         },
-        child_attachments: childAttachments(_pet),
       };
 
       const adCreative = await new AdAccount(
@@ -288,6 +288,11 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       _count: {
         id: true,
       },
+      where: {
+        status: {
+          notIn: ["ARCHIVED"],
+        },
+      },
     });
 
     let pet = payment.pets;
@@ -322,34 +327,6 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       reply.send(adData);
     }
   );
-
-  // const task = new AsyncTask(
-  //   "Get latest impressions & clicks",
-  //   () => {
-  //     return db.pollForSomeData().then((result) => {
-  //       /* continue the promise chain */
-  //     });
-  //   },
-  //   (err: Error) => {
-  //     console.log(err);
-  //     /* handle error here */
-  //   }
-  // );
-  // const job = new SimpleIntervalJob({ seconds: 20 }, task);
-
-  // fastify.scheduler.addSimpleIntervalJob(job);
-
-  // const findAllFailedAdCreations = async () => {
-  //   // Get all payments made that are not have a no subscriptions
-  //   const payments = await prisma.payments.findMany({
-  //     where: {
-  //       status: 1,
-  //       adset_id: null,
-  //     },
-  //   });
-
-  //   return payments || [];
-  // };
 
   const getFbAdInsights = async (adId: string) => {
     let adInsightsField = [
@@ -426,8 +403,8 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     return adsets || [];
   };
 
-  const runFbAdInsightsTask = async () => {
-    // console.log("hi");
+  const fbAdInsightsTask = async () => {
+    console.log("fb insights task");
     let dbFbAdsets = await findAllRunningAds();
     if (!dbFbAdsets) throw new Error({ message: "No running ads found" });
     // return;
@@ -446,7 +423,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     }
   };
 
-  const runArchiveFbAdTask = async () => {
+  const archiveFbAdTask = async () => {
     const dbAdsets = await findAllFoundExpiredAds();
     if (!dbAdsets || dbAdsets.length === 0)
       throw new Error({ message: "No adsets found" });
@@ -467,7 +444,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     return dbAdsets;
   };
 
-  const runFbAdStatusCheckTask = async () => {
+  const fbAdStatusCheckTask = async () => {
     console.log("run fb ad status");
     const dbAdsets = await findAllAdsByStatus("PAUSED");
     console.log("db adsets", dbAdsets);
@@ -632,4 +609,47 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
     return payments || [];
   };
+
+  const runFbAdInsightsTask = new AsyncTask(
+    "Get latest impressions & clicks",
+    () => {
+      console.log("fb ad insights task");
+      return fbAdInsightsTask();
+    },
+    (err: Error) => {
+      console.log(err);
+    }
+  );
+
+  const runFbAdStatusCheckTask = new AsyncTask(
+    "Fb ad status check",
+    () => {
+      console.log("fb ad status check");
+      return fbAdStatusCheckTask();
+    },
+    (err: Error) => {
+      console.log(err);
+    }
+  );
+
+  const runArchiveFbAdTask = new AsyncTask(
+    "Archive fb ad",
+    () => {
+      console.log("archive ads");
+      return archiveFbAdTask();
+    },
+    (err: Error) => {
+      console.log(err);
+    }
+  );
+
+  fastify.scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob({ seconds: 40 }, runFbAdInsightsTask)
+  );
+  fastify.scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob({ seconds: 30 }, runArchiveFbAdTask)
+  );
+  fastify.scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob({ seconds: 20 }, runFbAdStatusCheckTask)
+  );
 }
