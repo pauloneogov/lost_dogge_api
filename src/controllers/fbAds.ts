@@ -644,12 +644,12 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   );
 
   fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ seconds: 40 }, runFbAdInsightsTask)
+    new SimpleIntervalJob({ minutes: 60 }, runFbAdInsightsTask)
   );
   fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ seconds: 30 }, runArchiveFbAdTask)
+    new SimpleIntervalJob({ minutes: 30 }, runArchiveFbAdTask)
   );
   fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ seconds: 20 }, runFbAdStatusCheckTask)
+    new SimpleIntervalJob({ minutes: 20 }, runFbAdStatusCheckTask)
   );
 }
