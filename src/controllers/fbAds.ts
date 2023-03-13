@@ -647,9 +647,9 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     new SimpleIntervalJob({ minutes: 60 }, runFbAdInsightsTask)
   );
   fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ minutes: 30 }, runArchiveFbAdTask)
+    new SimpleIntervalJob({ minutes: 90 }, runArchiveFbAdTask)
   );
   fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ minutes: 20 }, runFbAdStatusCheckTask)
+    new SimpleIntervalJob({ minutes: 30 }, runFbAdStatusCheckTask)
   );
 }
