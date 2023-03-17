@@ -20,6 +20,7 @@ const main = async () => {
       "FACEBOOK_ACCESS_SECRET",
       "FACEBOOK_AD_ACCOUNT_ID",
       "FACEBOOK_PAGE_ID",
+      "BASE_URL",
     ],
     properties: {
       STRIPE_SECRET: {
@@ -41,6 +42,9 @@ const main = async () => {
         type: "string",
       },
       FACEBOOK_PAGE_ID: {
+        type: "string",
+      },
+      BASE_URL: {
         type: "string",
       },
     },

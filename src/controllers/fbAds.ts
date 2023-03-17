@@ -10,6 +10,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   const facebookAccessToken = fastify?.config.FACEBOOK_ACCESS_TOKEN;
   const facebookAdAccountId = fastify?.config.FACEBOOK_AD_ACCOUNT_ID;
   const facebookPageId = fastify?.config.FACEBOOK_PAGE_ID;
+  const baseUrl = fastify?.config.BASE_URL;
 
   const fbAdsApi = bizSdk.FacebookAdsApi.init(facebookAccessToken);
   const showDebugingInfo = true;
@@ -111,8 +112,8 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         geo_locations: {
           custom_locations: [
             {
-              latitude: 45.458311,
-              longitude: -72.902611,
+              latitude: _pet.latitude,
+              longitude: _pet.longitude,
               radius: 10,
               distance_unit: "mile",
             },
@@ -188,6 +189,13 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
     console.log("create ad");
 
+    let petType: string = "";
+    if (_pet.status === 2) {
+      petType = "found";
+    } else {
+      petType = "lost";
+    }
+
     try {
       let childAttachments = () => {
         const petImages = _pet.pet_images || [];
@@ -195,9 +203,9 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         petImages.forEach((image) => {
           childAttachments.push({
             name: "Have you seen me?",
-            link: `https://lost-dogge.com/pet/lost/${_pet.id}`,
+            link: `${baseUrl}/pets?type=${petType}&pet_id=${_pet.id}`,
             picture: image.url,
-            description: "I was lost at",
+            description: `I was lost at ${_pet.address}`,
           });
         });
 
@@ -212,7 +220,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         object_story_spec: {
           page_id: facebookPageId,
           link_data: {
-            link: `http://lostdoggo.com`,
+            link: `${baseUrl}`,
             child_attachments: childAttachments(_pet),
           },
         },
