@@ -67,7 +67,6 @@ model pets {
   instagram                                  String?
   facebook                                   String?
   twitter                                    String?
-  is_deleted                                 Boolean?
   user_id                                    String?             @db.Uuid
   lost_date                                  DateTime?           @db.Timestamptz(6)
   found_date                                 DateTime?           @db.Timestamptz(6)
@@ -76,6 +75,8 @@ model pets {
   gender                                     Int?                @default(0) @db.SmallInt
   address                                    String?
   animal_type_id                             BigInt?
+  is_deleted                                 Boolean             @default(false)
+  is_mine                                    Boolean?            @default(false)
   animal_types                               animal_types?       @relation(fields: [animal_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   animal_breeds                              animal_breeds?      @relation(fields: [breed_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                                      users?              @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
