@@ -7,13 +7,13 @@ import cityData from "./json/cityData.js";
 import petName from "./json/petName.js";
 // @ts-ignore
 // import LocalFileData from "get-file-object-from-local-path";
-// import { decode } from "base64-arraybuffer";
+import { decode } from "base64-arraybuffer";
 
 const prisma = new PrismaClient();
 // import breedsData from './json/breed.js'
 let breedsData = require("./json/breed.js");
 // const path = require("path");
-// var fs = require("fs");
+var fs = require("fs");
 
 async function main() {
   const supabase = await createClient(
@@ -21,13 +21,47 @@ async function main() {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZoYXN1cXpqbXJ1aHZ1Z2NsdXR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2NjA2ODk5ODIsImV4cCI6MTk3NjI2NTk4Mn0.SYrw1VVHMBph5TEuwG383rsCthXXs-ni6g2LXC9NCSc"
   );
 
+  // const petsWithoutImages = await prisma.pets.findMany({
+  //   where: {
+  //     pet_images: { none: {} },
+  //   },
+  //   include: {
+  //     pet_images: true,
+  //   },
+  // });
+
+  // console.log(petsWithoutImages);
+
+  // const petsWithoutImagesIds = petsWithoutImages.map((pet) => pet.id);
+
+  // const deletedPetImages = await prisma.pet_images.deleteMany({
+  //   where: {
+  //     pet_id: {
+  //       in: petsWithoutImagesIds,
+  //     },
+  //   },
+  // });
+
+  // console.log(deletedPetImages);
+
+  // const deletedPets = await prisma.pets.deleteMany({
+  //   where: {
+  //     id: {
+  //       in: petsWithoutImagesIds,
+  //     },
+  //   },
+  // });
+  // console.log(deletedPets);
+
+  // await prisma.pets.deleteMany();
+
   const hasWhiteSpace = (s: string) => {
     return s.indexOf(" ") >= 0;
   };
 
-  // var files = fs.readdirSync(process.cwd() + "/images");
+  var files = fs.readdirSync(process.cwd() + "/images/pet_images");
 
-  // console.log(files);
+  console.log(files);
 
   // // @ts-ignore
   // for (const file of files) {
@@ -55,7 +89,6 @@ async function main() {
   // await prisma.animal_types.deleteMany();
 
   // @ts-ignore
-  // let allPetImages = [];
   // let hasData = true;
 
   // while (hasData) {
@@ -76,21 +109,17 @@ async function main() {
 
   // console.log(allPetImages);
 
-  return;
-
-  console.log(allPetImages?.length);
-
-  const catImages = allPetImages?.filter(
-    (pet) => pet.name.includes("cat") && !hasWhiteSpace(pet.name)
+  const catImages = files?.filter(
+    // @ts-ignore
+    (pet) => pet.includes("cat") && !hasWhiteSpace(pet)
   );
-  const dogImages = allPetImages?.filter(
-    (pet) => pet.name.includes("dog") && !hasWhiteSpace(pet.name)
+  const dogImages = files?.filter(
+    // @ts-ignore
+    (pet) => pet.includes("dog") && !hasWhiteSpace(pet)
   );
 
   console.log(catImages?.length);
   console.log(dogImages?.length);
-
-  return;
 
   // @ts-ignore
   let mockPets = [];
@@ -104,9 +133,14 @@ async function main() {
 
   // console.log(cityData);
 
+  const vermontBurlingtonGeo = {
+    lon: 44.4759,
+    lat: -73.2121,
+  };
+
   // @ts-ignore
   cityData.forEach((city) => {
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 5; i++) {
       mockPets.push({
         name: petNames[faker.datatype.number({ max: petNames.length - 1 })],
         //     description: faker.lorem.paragraph(),
@@ -130,11 +164,11 @@ async function main() {
         is_mine: true,
         lost_date: faker.date.recent(),
         longitude:
-          city.longitude +
-          faker.datatype.float({ precision: 0.0001, max: 0.001 }),
+          vermontBurlingtonGeo.lon +
+          faker.datatype.float({ precision: 0.001, max: 3, min: -3 }),
         latitude:
-          city.latitude +
-          faker.datatype.float({ precision: 0.0001, max: 0.001 }),
+          vermontBurlingtonGeo.lat +
+          faker.datatype.float({ precision: 0.001, max: 3, min: -3 }),
       });
     }
   });
@@ -163,50 +197,86 @@ async function main() {
 
   // console.log(animalBreeds);
 
-  // const vermontBurlingtonGeo = {
-  //   lon: 44.4759,
-  //   lat: -73.2121,
-  // };
-
-  await prisma.pets.createMany({
-    // @ts-ignore
-    data: mockPets,
-  });
-
   const pets = await prisma.pets.findMany({
     include: {
       animal_types: true,
     },
   });
-  // console.log(pets);
+  console.log("pet", pets);
 
   let mockPetImages: any = [];
   // for (let i = 0; i < 2; i++) {
   //  @ts-ignore
-  pets.forEach((_pet) => {
-    console.log(_pet?.animal_types);
-    mockPetImages.push({
-      pet_id: _pet.id,
 
-      url:
-        _pet.animal_types?.name === "Dog"
-          ? `https://fhasuqzjmruhvugclutt.supabase.co/storage/v1/object/public/pets/public/${
-              //  @ts-ignore
-              dogImages[faker.datatype.number({ max: dogImages.length - 1 })]
-                ?.name
-            }`
-          : `https://fhasuqzjmruhvugclutt.supabase.co/storage/v1/object/public/pets/public/${
-              //  @ts-ignore
-              catImages[faker.datatype.number({ max: catImages.length - 1 })]
-                ?.name
-            }`,
-    });
-  });
+  for (const _pet of mockPets) {
+    let file =
+      _pet.animal_type_id == BigInt(90)
+        ? dogImages[faker.datatype.number({ max: dogImages.length - 1 })]
+        : catImages[faker.datatype.number({ max: catImages.length - 1 })];
+
+    const contents = fs.readFileSync(
+      process.cwd() + "/images/pet_images/" + file,
+      {
+        encoding: "base64",
+      }
+    );
+
+    console.log(
+      "animal type id",
+      _pet.animal_type_id,
+      _pet.animal_type_id == BigInt(90)
+    );
+
+    const petPath = `public/${
+      _pet.animal_type_id == BigInt(90)
+        ? dogImages[faker.datatype.number({ max: dogImages.length - 1 })]
+        : catImages[faker.datatype.number({ max: catImages.length - 1 })]
+    }`;
+
+    console.log("pet path", petPath);
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from("pets")
+      .upload(petPath, decode(contents), {
+        cacheControl: "3600",
+        contentType: "image/jpg",
+      });
+
+    console.log(uploadData);
+    console.log(uploadError);
+
+    // @ts-ignore
+    if (uploadData || uploadError?.statusCode == 409) {
+      console.log("saved pet", _pet);
+
+      const savedPet = await prisma.pets.create({
+        // @ts-ignore
+        data: _pet,
+      });
+
+      mockPetImages.push({
+        pet_id: savedPet.id,
+        url: `https://fhasuqzjmruhvugclutt.supabase.co/storage/v1/object/public/pets/public/${file}`,
+      });
+
+      let petImages = await prisma.pet_images.create({
+        data: {
+          pet_id: savedPet.id,
+          url: `https://fhasuqzjmruhvugclutt.supabase.co/storage/v1/object/public/pets/public/${file}`,
+        },
+      });
+      console.log("count", mockPetImages.length);
+
+      console.log(petImages);
+    }
+  }
   // }
 
-  await prisma.pet_images.createMany({
-    data: mockPetImages,
-  });
+  // const petImages = await prisma.pet_images.createMany({
+  //   data: mockPetImages,
+  // });
+
+  // console.log("pet images", petImages);
 
   // const petImages = await prisma.pet_images.findMany();
   // console.log(petImages);

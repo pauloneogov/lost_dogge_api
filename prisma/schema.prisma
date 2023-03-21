@@ -119,7 +119,7 @@ model pet_images {
   created_at    DateTime?       @default(now()) @db.Timestamptz(6)
   pet_id        String?         @db.Uuid
   url           String?         @db.VarChar
-  pets          pets?           @relation(fields: [pet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  pets          pets?           @relation(fields: [pet_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   ai_pet_breeds ai_pet_breeds[]
 }
 

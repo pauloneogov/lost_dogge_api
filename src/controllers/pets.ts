@@ -79,9 +79,9 @@ export function petRoutes(fastify: FastifyInstance) {
         longitude = parseFloat(ipLatitude) || vermontBurlingtonGeo.lon,
         latitude = parseFloat(ipLongitude) || vermontBurlingtonGeo.lat,
         status = 1,
-        radius = 10000,
+        radius = 10000000,
         skip = 1,
-        limit = 10,
+        limit = 50,
         breed_ids = [],
         animal_type_id = undefined,
         gender = undefined,
@@ -128,14 +128,20 @@ export function petRoutes(fastify: FastifyInstance) {
               'url', public.pet_images.url
           )
         ) as pet_images,
+        'id', public.pets.id,
+        'animal_type_id', public.animal_types.id,
+        'name', public.pets.name,
         json_build_object(
             'id', public.animal_breeds.id,
             'name', public.animal_breeds.name,
             'animal_type_id', public.animal_breeds.animal_type_id,
             'animal_type', json_build_object(
-                'name', public.animal_types.name
+            'name', public.animal_types.name
             )
         ) as breed,
+        json_build_object(
+          'name', public.animal_types.name
+        ) as animal_types,
         ST_Distance(ST_MakePoint(${Number(longitude)}, ${Number(
         latitude
       )})::geography,
@@ -146,10 +152,10 @@ export function petRoutes(fastify: FastifyInstance) {
         ${animalTypesQuery}
         ${statusQuery}
         ${genderQuery}
-        LEFT JOIN public.animal_types ON public.animal_types.id = public.animal_breeds.animal_type_id
+        LEFT JOIN public.animal_types ON public.animal_types.id = public.pets.animal_type_id
         LEFT JOIN public.pet_images ON public.pet_images.pet_id = public.pets.id
         WHERE ST_DWithin(
-            ST_MakePoint(${longitude}, ${latitude})::geography,
+            ST_MakePoint(${Number(longitude)}, ${Number(latitude)})::geography,
             ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography,
             ${Number(radius)}
         )
