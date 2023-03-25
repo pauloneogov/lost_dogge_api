@@ -9,8 +9,6 @@ export function hookRoutes(fastify: FastifyInstance) {
     "/api/v1/hook/create-pet",
     async (request: FastifyRequest, reply: FastifyReply) => {
       let event = request.body;
-      console.log(request);
-      console.log(event);
     }
   );
 
@@ -18,8 +16,6 @@ export function hookRoutes(fastify: FastifyInstance) {
     "/api/v1/hook/update-pet",
     async (request: FastifyRequest, reply: FastifyReply) => {
       let event = request.body;
-      console.log(request);
-      console.log(event);
     }
   );
 

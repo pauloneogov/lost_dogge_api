@@ -4,6 +4,7 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import Stripe from "stripe";
 import { prisma } from "../prisma";
 import "../helpers/bigInt.js";
+import { logger } from "../main";
 
 export function stripeRoutes(fastify: FastifyInstance) {
   const stripeEndpoint = fastify?.config.STRIPE_WEBHOOK;
@@ -53,7 +54,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
           },
         });
       } catch (error) {
-        console.log(error);
+        request.log.error({ type: "stripe-webhook", data: error });
         return reply.status(500).send({ message: "Unexpected error" });
       }
 
@@ -120,6 +121,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
             stripeEndpoint
           );
         } catch (err) {
+          request.log.error({ type: "stripe-webhook", data: err });
           console.log(`⚠️  Webhook signature verification failed.`, err);
           return reply.status(400);
         }
@@ -141,6 +143,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
         default:
           // Unexpected event type
           console.log(`Unhandled event type ${event.type}.`);
+          request.log.error({ type: "stripe-webhook", data: event });
       }
 
       return reply.send("success");
@@ -148,7 +151,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
   );
 
   const handlePaymentIntentSucceeded = async (paymentIntent) => {
-    console.log("paymentIntent", paymentIntent.charges.data);
+    logger.info({ type: "paymentIntent", data: paymentIntent });
     // CHECK IF THE PAYMENT INTENT status key is success or failed
     try {
       await prisma.payments.update({
@@ -162,7 +165,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
         },
       });
     } catch (error) {
-      console.log(error);
+      logger.error({ type: "paymentIntent", data: error });
     }
   };
 

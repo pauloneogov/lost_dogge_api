@@ -30,7 +30,6 @@ async function main() {
   //   },
   // });
 
-
   // const petsWithoutImagesIds = petsWithoutImages.map((pet) => pet.id);
 
   // const deletedPetImages = await prisma.pet_images.deleteMany({
@@ -40,7 +39,6 @@ async function main() {
   //     },
   //   },
   // });
-
 
   // const deletedPets = await prisma.pets.deleteMany({
   //   where: {
@@ -99,7 +97,6 @@ async function main() {
   //   }
   // }
 
-
   const catImages = files?.filter(
     // @ts-ignore
     (pet) => pet.includes("cat") && !hasWhiteSpace(pet)
@@ -109,17 +106,12 @@ async function main() {
     (pet) => pet.includes("dog") && !hasWhiteSpace(pet)
   );
 
-
   // @ts-ignore
   let mockPets = [];
 
   const petNames = [...new Set(petName)];
-
   const animalBreeds = await prisma.animal_breeds.findMany();
-
   const animalTypes = await prisma.animal_types.findMany();
-
-  // console.log(cityData);
 
   const vermontBurlingtonGeo = {
     lon: 44.4759,
@@ -162,7 +154,6 @@ async function main() {
   });
 
   // @ts-ignore
-  console.log(mockPets);
 
   // await prisma.animal_types.createMany({
   //   data: [{ name: "Cat" }, { name: "Dog" }],

@@ -14,7 +14,6 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   const facebookAdsetStatus = fastify?.config.FACEBOOK_ADSET_STATUS;
   const baseUrl = fastify?.config.BASE_URL;
   const instagramAdId = "6309923639058386";
-  console.log(fastify.logger);
 
   const fbAdsApi = bizSdk.FacebookAdsApi.init(facebookAccessToken);
   const showDebugingInfo = true;
@@ -497,7 +496,6 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         fbAd._data.effective_status === "ACTIVE" ||
         fbAd._data.effective_status === "PAUSED"
       ) {
-        console.log("dbAdsetId", dbAdset.id);
         const expiryDate = new Date(
           new Date().setDate(
             new Date().getDate() +
@@ -668,7 +666,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       return archiveFbAdTask();
     },
     (err: Error) => {
-      console.log(err);
+      logger.error({ type: "runArchiveFbAdTask Error", data: err });
     }
   );
 
