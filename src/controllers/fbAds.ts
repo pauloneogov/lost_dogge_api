@@ -231,7 +231,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         adset_id: _adset.fb_adset_id,
         creative: { creative_id: adCreative.id },
         body: `Last seen at ${_pet.address}`,
-        status: "ACTIVE",
+        status: facebookAdsetStatus,
       };
 
       const ad = await new AdAccount(facebookAdAccountId).createAd(
@@ -261,8 +261,6 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         throw Error({ message: "DB - Update fb adset failed" });
 
       return ad;
-
-      logApiCallResult("ads api call complete.", ad);
     } catch (error) {
       console.log("🚀 ~ file: fbAds.ts:212 ~ createAd ~ error", error);
     }
@@ -348,6 +346,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       adInsightsField,
       adInsightsParams
     );
+
     return insights.data;
   };
 
@@ -407,6 +406,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   const fbAdInsightsTask = async () => {
     logger.info("fbAdInsightsTask");
     let dbFbAdsets = await findAllRunningAds();
+    logger.info({ type: "fbAdInsightsTask: dbFbAdsets", data: dbFbAdsets });
     if (!dbFbAdsets) {
       logger.error("No running ads found");
       throw new Error({ message: "No running ads found" });
@@ -415,6 +415,10 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
     for (const dbAdset of dbFbAdsets) {
       const fbAdSetInsight = await getFbAdInsights(dbAdset.fb_adsets?.fb_ad_id);
+      logger.info({
+        type: "fbAdInsightsTask: fbAdSetInsight",
+        data: fbAdSetInsight,
+      });
       if (!fbAdSetInsight) continue;
       logger.info("fbAdSetInsight", fbAdSetInsight);
 
@@ -423,28 +427,40 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         impressions: fbAdSetInsight.impressions || 0,
         linkClicks: fbAdSetInsight.inline_link_clicks || 0,
         reach: fbAdSetInsight.reach || 0,
-        fbAdPreviewUrl: fbAdSetInsight.fb_ad_preview_url || "",
       });
     }
   };
 
   const archiveFbAdTask = async () => {
     const dbAdsets = await findAllFoundExpiredAds();
-    if (!dbAdsets || dbAdsets.length === 0) logger.error("No adsets found");
+    logger.info({ type: "archiveFbAdTask: dbAdsets", data: dbAdsets });
+    if (!dbAdsets || dbAdsets.length === 0) {
+      logger.error("No adsets found");
+      return;
+    }
 
     for (const dbAdset of dbAdsets) {
       logger.info({
         type: "Archive Fb Ad Task",
         data: dbAdset.fb_adsets?.fb_adset_id,
       });
-      await archiveAdSet(dbAdset.fb_adsets?.fb_adset_id);
-      await prisma.payments.update({
+      let archivedAdSet = await archiveAdSet(dbAdset.fb_adsets?.fb_adset_id);
+      logger.info({
+        type: "Archive Fb Ad Task",
+        data: archivedAdSet,
+      });
+      if (!archivedAdSet) continue;
+      let payment = await prisma.payments.update({
         where: {
           id: dbAdset.payments[0].id,
         },
         data: {
           status: 2,
         },
+      });
+      logger.info({
+        type: "Archive Fb Ad Task",
+        data: payment,
       });
     }
 
@@ -472,6 +488,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
       await updateAdDetails(dbAdset.id, {
         status: fbAd._data.effective_status,
+        fbAdPreviewUrl: fbAd._data.preview_shareable_link,
         statusCheckDate: new Date(),
       });
 
@@ -571,7 +588,6 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         end_date: {
           gte: new Date(),
         },
-        // status: "PAUSED",
       },
       include: {
         fb_adsets: true,
@@ -648,6 +664,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   const runArchiveFbAdTask = new AsyncTask(
     "Archive fb ad",
     () => {
+      logger.info("archive fb ad");
       return archiveFbAdTask();
     },
     (err: Error) => {
@@ -655,13 +672,13 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // fastify.scheduler.addSimpleIntervalJob(
-  //   new SimpleIntervalJob({ minutes: 60 }, runFbAdInsightsTask)
-  // );
-  // fastify.scheduler.addSimpleIntervalJob(
-  //   new SimpleIntervalJob({ minutes: 30 }, runArchiveFbAdTask)
-  // );
   fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ seconds: 10 }, runFbAdStatusCheckTask)
+    new SimpleIntervalJob({ minutes: 60 }, runFbAdInsightsTask)
+  );
+  fastify.scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob({ minutes: 30 }, runArchiveFbAdTask)
+  );
+  fastify.scheduler.addSimpleIntervalJob(
+    new SimpleIntervalJob({ minutes: 15 }, runFbAdStatusCheckTask)
   );
 }
