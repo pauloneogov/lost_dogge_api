@@ -222,6 +222,8 @@ model fb_adsets {
   impression_count  Decimal?      @db.Decimal
   fb_ad_creative_id String?       @db.VarChar
   status_check_date DateTime?     @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
+  link_clicks_count Decimal?      @db.Decimal
+  fb_ad_preview_url String?       @db.VarChar
   fb_campaigns      fb_campaigns? @relation(fields: [campaign_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   payments          payments[]
 }

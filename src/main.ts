@@ -9,6 +9,8 @@ const { fastifySchedulePlugin } = require("@fastify/schedule");
 // @ts-ignore
 import axiosClient from "fastify-axios";
 
+let logger = null;
+
 const main = async () => {
   const schema = {
     type: "object",
@@ -20,6 +22,7 @@ const main = async () => {
       "FACEBOOK_ACCESS_SECRET",
       "FACEBOOK_AD_ACCOUNT_ID",
       "FACEBOOK_PAGE_ID",
+      "FACEBOOK_ADSET_STATUS",
       "BASE_URL",
     ],
     properties: {
@@ -44,15 +47,32 @@ const main = async () => {
       FACEBOOK_PAGE_ID: {
         type: "string",
       },
+      FACEBOOK_ADSET_STATUS: {
+        type: "string",
+      },
       BASE_URL: {
         type: "string",
       },
     },
   };
 
+  const envToLogger = {
+    transport: {
+      target: "pino-pretty",
+      options: {
+        ignore: "pid,hostname",
+      },
+    },
+    destination: {
+      dest: "./log_output", // omit for stdout
+      minLength: 4096, // Buffer before writing
+      sync: false, // Asynchronous logging
+    },
+  };
+
   const server = Fastify({
     genReqId: () => randomBytes(8).toString("hex"),
-    logger: true,
+    logger: envToLogger,
   });
 
   server.register(fastifySchedulePlugin);
@@ -107,5 +127,9 @@ const main = async () => {
     await prisma.$disconnect();
     process.exit(1);
   }
+
+  logger = server.log;
 };
 main();
+
+export { logger };

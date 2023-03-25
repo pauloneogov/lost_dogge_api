@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { prisma } from "../prisma";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { logger } from "../main";
 const bizSdk = require("facebook-nodejs-business-sdk");
 const { SimpleIntervalJob, AsyncTask } = require("toad-scheduler");
 const AdAccount = bizSdk.AdAccount;
@@ -10,16 +11,19 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   const facebookAccessToken = fastify?.config.FACEBOOK_ACCESS_TOKEN;
   const facebookAdAccountId = fastify?.config.FACEBOOK_AD_ACCOUNT_ID;
   const facebookPageId = fastify?.config.FACEBOOK_PAGE_ID;
+  const facebookAdsetStatus = fastify?.config.FACEBOOK_ADSET_STATUS;
   const baseUrl = fastify?.config.BASE_URL;
+  const instagramAdId = "6309923639058386";
+  console.log(fastify.logger);
 
   const fbAdsApi = bizSdk.FacebookAdsApi.init(facebookAccessToken);
   const showDebugingInfo = true;
   fbAdsApi.setDebug(showDebugingInfo);
 
   const logApiCallResult = (apiCallName, data) => {
-    console.log(apiCallName);
     if (showDebugingInfo) {
-      console.log("Data:" + JSON.stringify(data));
+      logger.info("API called: " + apiCallName);
+      logger.info("Data:" + JSON.stringify(data));
     }
   };
 
@@ -52,7 +56,10 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       params
     );
 
-    if (!campaign) throw new Error("Failed to create campaign");
+    if (!campaign) {
+      logger.error("Failed to create campaign");
+      throw new Error("Failed to create campaign");
+    }
 
     const dbFbCampaign = await prisma.fb_campaigns.create({
       data: {
@@ -90,10 +97,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         },
       });
 
-      console.log(
-        "🚀 ~ file: fbAds.ts:83 ~ fbAdRoutes ~ latestAdset",
-        campaign
-      );
+      logger.info("campaign", campaign);
 
       fbCampaignId = campaign?.fb_campaign_id;
     }
@@ -105,7 +109,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       billing_event: "IMPRESSIONS",
       daily_budget: 600,
       campaign_id: fbCampaignId,
-      status: "ACTIVE",
+      status: facebookAdsetStatus,
       bid_strategy: "LOWEST_COST_WITH_BID_CAP",
       bid_amount: 100,
       targeting: {
@@ -121,15 +125,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         },
       },
     };
-    console.log(
-      "🚀 ~ file: fbAds.ts:109 ~ fbAdRoutes ~ adsetParams",
-      adsetParams.targeting.geo_locations
-    );
-
-    console.log(
-      "🚀 ~ file: fbAds.ts:109 ~ fbAdRoutes ~ adsetParams",
-      adsetParams
-    );
+    logger.info("adsetParams", adsetParams);
 
     try {
       const adSet = await new AdAccount(facebookAdAccountId).createAdSet(
@@ -141,8 +137,6 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
       if (!adSet) throw new Error("Adset failed");
 
-      console.log("🚀 ~ file: fbAds.ts:77 ~ fbAdRoutes ~ campaign", campaign);
-
       const dbFbAdset = await prisma.fb_adsets.create({
         data: {
           optimization_goal: adsetParams.optimization_goal,
@@ -150,16 +144,17 @@ export function fbAdRoutes(fastify: FastifyInstance) {
           daily_budget: adsetParams.daily_budget,
           campaign_id: campaign?.id,
           targeting: adsetParams.targeting,
-          status: "PENDING REVIEW",
+          status: "PENDING_REVIEW",
           fb_adset_id: adSet?.id,
         },
       });
-      console.log(
-        "🚀 ~ file: fbAds.ts:159 ~ fbAdRoutes ~ dbFbAdset:",
-        dbFbAdset
-      );
 
-      if (!dbFbAdset) throw new Error({ message: "DB - FB Adset failed" });
+      logger.info("adsetParams", dbFbAdset);
+
+      if (!dbFbAdset) {
+        logger.error("DB - FB Adset failed");
+        throw new Error({ message: "DB - FB Adset failed" });
+      }
 
       const payment = await prisma.payments.update({
         where: {
@@ -170,24 +165,23 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         },
       });
 
-      if (!payment)
+      if (!payment) {
+        logger.error("DB - Payment failed to update");
         throw new Error({ message: "DB - Payment failed to update" });
-
-      console.log(
-        "🚀 ~ file: fbAds.ts:139 ~ fbAdRoutes ~ dbFbAdset",
-        dbFbAdset
-      );
+      }
 
       return dbFbAdset;
     } catch (error) {
-      console.log(error);
+      logger.error("Adset failed", error);
+      throw new Error(error);
     }
   };
 
   const createAd = async (_adset: string, _pet: Object) => {
-    if (!_pet) throw new Error("No pet found");
-
-    console.log("create ad");
+    if (!_pet) {
+      logger.error("No pet found");
+      throw new Error("No pet found");
+    }
 
     let petType: string = "";
     if (_pet.status === 2) {
@@ -212,11 +206,10 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         return childAttachments;
       };
 
-      console.log(_pet);
-
       let adCreativeFields = [];
       let adCreativeParams = {
         name: _pet.id,
+        effective_instagram_media_id: instagramAdId,
         object_story_spec: {
           page_id: facebookPageId,
           link_data: {
@@ -232,15 +225,13 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
       logApiCallResult("ad creative api call complete.", adCreative);
 
-      console.log("adset", _adset);
-
       let adFields = [];
       let adParams = {
         name: _pet.id,
         adset_id: _adset.fb_adset_id,
         creative: { creative_id: adCreative.id },
         body: `Last seen at ${_pet.address}`,
-        status: "PAUSED",
+        status: "ACTIVE",
       };
 
       const ad = await new AdAccount(facebookAdAccountId).createAd(
@@ -248,9 +239,12 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         adParams
       );
 
-      console.log(ad);
+      logger.info({ type: "ad", data: ad });
 
-      if (!ad) throw new Error({ message: "Ad failed to create" });
+      if (!ad) {
+        logger.error("Ad failed to create");
+        throw new Error({ message: "Ad failed to create" });
+      }
 
       const updatedDbFbAdset = await prisma.fb_adsets.update({
         where: {
@@ -261,7 +255,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         },
       });
 
-      console.log(updatedDbFbAdset);
+      logger.info({ type: "updatedDbFbAdset", data: updatedDbFbAdset });
 
       if (!updatedDbFbAdset)
         throw Error({ message: "DB - Update fb adset failed" });
@@ -313,12 +307,12 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       fbCampaignCount,
       fbAdSetCount
     );
-    console.log("🚀 ~ file: fbAds.ts:290 ~ createFbAdFlow ~ adset:", adset);
+
+    logger.info("adset", adset);
 
     const ad = await createAd(adset, pet);
 
-    console.log(adset);
-    console.log(ad);
+    logger.info("ad", ad);
 
     return {
       ad,
@@ -329,6 +323,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/api/v1/fb/ad",
     async (request: FastifyRequest, reply: FastifyReply) => {
+      request.log.info("GET /api/v1/fb/ad", request);
       let { payment_id } = request.body;
 
       const adData = await createFbAdFlow(payment_id);
@@ -364,26 +359,24 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       "updated_time",
     ];
     let fbAdParams = {};
-    console.log(adId);
+    logger.info({ type: "GET /api/v1/fb/ad", data: adId });
 
     try {
       let ad = await new Ad(adId).get(fbAdField, fbAdParams);
-      console.log(ad);
+      logger.info({ type: "GET /api/v1/fb/ad", data: ad });
       return ad;
     } catch (error) {
-      console.log(error);
+      logger.info({ type: "GET /api/v1/fb/ad", data: error });
+      return;
     }
   };
 
-  const findAllAdsByStatus = async (status: string) => {
+  const findAllAdsByStatus = async (statuses: string[]) => {
     const adsets = await prisma.fb_adsets.findMany({
       where: {
-        // payments: {
-        //   every: {
-        //     status: 1,
-        //   },
-        // },
-        status,
+        status: {
+          in: statuses,
+        },
         fb_ad_id: {
           not: null,
         },
@@ -412,32 +405,38 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   };
 
   const fbAdInsightsTask = async () => {
-    console.log("fb insights task");
+    logger.info("fbAdInsightsTask");
     let dbFbAdsets = await findAllRunningAds();
-    if (!dbFbAdsets) throw new Error({ message: "No running ads found" });
+    if (!dbFbAdsets) {
+      logger.error("No running ads found");
+      throw new Error({ message: "No running ads found" });
+    }
     // return;
 
     for (const dbAdset of dbFbAdsets) {
       const fbAdSetInsight = await getFbAdInsights(dbAdset.fb_adsets?.fb_ad_id);
       if (!fbAdSetInsight) continue;
-      console.log(fbAdSetInsight);
+      logger.info("fbAdSetInsight", fbAdSetInsight);
 
       updateAdDetails({
         adId: _dbFbAdset.id,
         impressions: fbAdSetInsight.impressions || 0,
         linkClicks: fbAdSetInsight.inline_link_clicks || 0,
         reach: fbAdSetInsight.reach || 0,
+        fbAdPreviewUrl: fbAdSetInsight.fb_ad_preview_url || "",
       });
     }
   };
 
   const archiveFbAdTask = async () => {
     const dbAdsets = await findAllFoundExpiredAds();
-    if (!dbAdsets || dbAdsets.length === 0)
-      throw new Error({ message: "No adsets found" });
+    if (!dbAdsets || dbAdsets.length === 0) logger.error("No adsets found");
 
     for (const dbAdset of dbAdsets) {
-      console.log("archived");
+      logger.info({
+        type: "Archive Fb Ad Task",
+        data: dbAdset.fb_adsets?.fb_adset_id,
+      });
       await archiveAdSet(dbAdset.fb_adsets?.fb_adset_id);
       await prisma.payments.update({
         where: {
@@ -453,19 +452,24 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   };
 
   const fbAdStatusCheckTask = async () => {
-    console.log("run fb ad status");
-    const dbAdsets = await findAllAdsByStatus("PAUSED");
-    console.log("db adsets", dbAdsets);
-    if (!dbAdsets || dbAdsets.length === 0)
-      throw new Error({ message: "No adsets found" });
+    logger.info({
+      type: "fbAdStatusCheckTask",
+      data: "Run fb ad status check task",
+    });
+    const dbAdsets = await findAllAdsByStatus(["PENDING_REVIEW", "PAUSED"]);
+
+    logger.info({ type: "fbAdStatusCheckTask - dbAdsets", data: dbAdsets });
+    if (!dbAdsets || dbAdsets.length === 0) {
+      logger.error("No adsets found");
+      return;
+    }
 
     for (const dbAdset of dbAdsets) {
-      console.log("db adset", dbAdset);
       const fbAd = await getFbAd(dbAdset.fb_ad_id);
 
+      logger.info({ type: "fbAdStatusCheckTask - fbAd", data: fbAd });
       if (!fbAd) continue;
 
-      console.log("fb ad details", fbAd._data);
       await updateAdDetails(dbAdset.id, {
         status: fbAd._data.effective_status,
         statusCheckDate: new Date(),
@@ -512,12 +516,12 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   };
 
   const archiveAdSet = async (adSetId: string) => {
+    logger.info("archiveAdSet", "archiving adset", adSetId);
     let fbAdsetField = [""];
     let fbAdsetParams = {
       end_time: new Date(),
       status: "DELETED",
     };
-    console.log("deletion");
 
     return await new Ad(adSetId).update(fbAdsetField, fbAdsetParams);
   };
@@ -526,7 +530,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
   const updateAdDetails = async (
     adSetId: string,
-    { status, impressions, linkClicks, reach, statusCheckDate }
+    { status, impressions, linkClicks, reach, statusCheckDate, fbAdPreviewUrl }
   ) => {
     const adsets = await prisma.fb_adsets.update({
       where: {
@@ -538,6 +542,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         ...(linkClicks && { link_clicks_count: linkClicks }),
         ...(reach && { reach_count: reach }),
         ...(statusCheckDate && { status_check_date: statusCheckDate }),
+        ...(fbAdPreviewUrl && { fb_ad_preview_url: fbAdPreviewUrl }),
       },
     });
 
@@ -574,7 +579,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       // TODO: Add the sorting by oldest insight updated
     });
 
-    console.log(payments);
+    logger.info("findAllRunningAds", payments);
 
     return payments || [];
   };
@@ -621,29 +626,28 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   const runFbAdInsightsTask = new AsyncTask(
     "Get latest impressions & clicks",
     () => {
-      console.log("fb ad insights task");
+      logger.info("fb ad insights task");
       return fbAdInsightsTask();
     },
     (err: Error) => {
-      console.log(err);
+      logger.error("runFbAdInsightsTask", err);
     }
   );
 
   const runFbAdStatusCheckTask = new AsyncTask(
     "Fb ad status check",
     () => {
-      console.log("fb ad status check");
+      logger.info("fb ad status check");
       return fbAdStatusCheckTask();
     },
     (err: Error) => {
-      console.log(err);
+      logger.error({ type: "runFbAdStatusCheckTask 1", data: err });
     }
   );
 
   const runArchiveFbAdTask = new AsyncTask(
     "Archive fb ad",
     () => {
-      console.log("archive ads");
       return archiveFbAdTask();
     },
     (err: Error) => {
@@ -651,13 +655,13 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // fastify.scheduler.addSimpleIntervalJob(
+  //   new SimpleIntervalJob({ minutes: 60 }, runFbAdInsightsTask)
+  // );
+  // fastify.scheduler.addSimpleIntervalJob(
+  //   new SimpleIntervalJob({ minutes: 30 }, runArchiveFbAdTask)
+  // );
   fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ minutes: 60 }, runFbAdInsightsTask)
-  );
-  fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ minutes: 90 }, runArchiveFbAdTask)
-  );
-  fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ minutes: 30 }, runFbAdStatusCheckTask)
+    new SimpleIntervalJob({ seconds: 10 }, runFbAdStatusCheckTask)
   );
 }

@@ -30,7 +30,6 @@ async function main() {
   //   },
   // });
 
-  // console.log(petsWithoutImages);
 
   // const petsWithoutImagesIds = petsWithoutImages.map((pet) => pet.id);
 
@@ -42,7 +41,6 @@ async function main() {
   //   },
   // });
 
-  // console.log(deletedPetImages);
 
   // const deletedPets = await prisma.pets.deleteMany({
   //   where: {
@@ -51,7 +49,6 @@ async function main() {
   //     },
   //   },
   // });
-  // console.log(deletedPets);
 
   // await prisma.pets.deleteMany();
 
@@ -60,8 +57,6 @@ async function main() {
   };
 
   var files = fs.readdirSync(process.cwd() + "/images/pet_images");
-
-  console.log(files);
 
   // // @ts-ignore
   // for (const file of files) {
@@ -78,7 +73,6 @@ async function main() {
   //       contentType: "image/jpg",
   //     });
 
-  //   console.log(uploadData, uploadError);
   // }
 
   // await prisma.lost_meta.deleteMany();
@@ -100,14 +94,11 @@ async function main() {
   //       offset: allPetImages.length || 0,
   //     });
   //   allPetImages.push(petImages);
-  //   console.log(petImages[petImages.length - 1]);
-  //   console.log(allPetImages.length);
   //   if (petImages?.length === 0) {
   //     hasData = false;
   //   }
   // }
 
-  // console.log(allPetImages);
 
   const catImages = files?.filter(
     // @ts-ignore
@@ -118,8 +109,6 @@ async function main() {
     (pet) => pet.includes("dog") && !hasWhiteSpace(pet)
   );
 
-  console.log(catImages?.length);
-  console.log(dogImages?.length);
 
   // @ts-ignore
   let mockPets = [];
@@ -129,7 +118,6 @@ async function main() {
   const animalBreeds = await prisma.animal_breeds.findMany();
 
   const animalTypes = await prisma.animal_types.findMany();
-  console.log(animalTypes);
 
   // console.log(cityData);
 

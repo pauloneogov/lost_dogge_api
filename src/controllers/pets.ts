@@ -24,6 +24,7 @@ export function petRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/api/v1/pets/latest-activity",
     async (request: FastifyRequest, reply: FastifyReply) => {
+      request.log.info("GET /api/v1/pets/latest-activity", request);
       let { limit = 1 } = request.query as {
         limit: number;
       };
@@ -63,6 +64,7 @@ export function petRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/api/v1/pets",
     async (request: FastifyRequest, reply: FastifyReply) => {
+      request.log.info("GET /api/v1/pets", request);
       let ipData;
       try {
         // @ts-ignore

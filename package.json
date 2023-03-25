@@ -54,6 +54,7 @@
     "fastify-webhook": "^4.0.1",
     "json-bigint": "^1.0.0",
     "jsonwebtoken": "^8.5.1",
+    "pino-pretty": "^10.0.0",
     "stripe": "^11.4.0",
     "toad-scheduler": "^2.2.0"
   }
