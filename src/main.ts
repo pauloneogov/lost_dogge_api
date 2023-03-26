@@ -8,7 +8,9 @@ import fastifyEnv from "@fastify/env";
 const { fastifySchedulePlugin } = require("@fastify/schedule");
 // @ts-ignore
 import axiosClient from "fastify-axios";
+import SlackNotify from "slack-notify";
 
+let slack = null;
 let logger = null;
 
 const main = async () => {
@@ -53,8 +55,14 @@ const main = async () => {
       BASE_URL: {
         type: "string",
       },
+      SLACK_WEBHOOK_URL: {
+        type: "string",
+      },
     },
   };
+
+  // @ts-ignore
+  slack = SlackNotify(process.env.SLACK_WEBHOOK_URL);
 
   const envToLogger = {
     transport: {
@@ -132,4 +140,4 @@ const main = async () => {
 };
 main();
 
-export { logger };
+export { logger, slack };

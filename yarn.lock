@@ -2996,6 +2996,11 @@ simple-update-notifier@^1.0.7:
   dependencies:
     semver "~7.0.0"
 
+slack-notify@^2.0.6:
+  version "2.0.6"
+  resolved "https://registry.yarnpkg.com/slack-notify/-/slack-notify-2.0.6.tgz#03052d6eebfd72e76a76e11feff7fa6bd8224f6c"
+  integrity sha512-9JJGBzdODgcIgtx5unQZX9yHx9ckM5kXkSJHhU//Eh1rj7vhAK6L89ElXU5ftprID2qbcMADPuzyu4XEp/142Q==
+
 slice-ansi@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/slice-ansi/-/slice-ansi-3.0.0.tgz#31ddc10930a1b7e0b67b08c96c2f49b77a789787"

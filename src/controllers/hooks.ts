@@ -1,27 +1,31 @@
-// @ts-nocheck
+import "../helpers/bigInt.js";
 import { FastifyReply } from "fastify";
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { prisma } from "../prisma";
-import "../helpers/bigInt.js";
+// @ts-ignore
+import { slack } from "../main";
 
 export function hookRoutes(fastify: FastifyInstance) {
-  fastify.post(
-    "/api/v1/hook/create-pet",
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      let event = request.body;
-    }
-  );
+  fastify.post("/api/v1/hook/create-pet", async (request: FastifyRequest) => {
+    let event = request.body;
+    // @ts-ignore
+    slack.alert({
+      channel: "#notify",
+      text: `Pet created: ${event}`,
+    });
+  });
 
-  fastify.post(
-    "/api/v1/hook/update-pet",
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      let event = request.body;
-    }
-  );
+  fastify.post("/api/v1/hook/payment-cu", async (request: FastifyRequest) => {
+    let event = request.body;
+    // @ts-ignore
+    slack.alert({
+      channel: "#notify",
+      text: `Payment created/updated: ${event}`,
+    });
+  });
 
-  const sendFoundPetEmail = (payload) => {};
+  // const sendFoundPetEmail = (payload) => {};
 
-  const sendLostPetEmail = (payload) => {};
+  // const sendLostPetEmail = (payload) => {};
 
   //   {
   //     type: 'INSERT',
