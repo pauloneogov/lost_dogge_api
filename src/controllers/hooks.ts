@@ -1,3 +1,4 @@
+// @ts-nocheck
 import "../helpers/bigInt.js";
 import { FastifyReply } from "fastify";
 import { FastifyInstance, FastifyRequest } from "fastify";
@@ -10,8 +11,13 @@ export function hookRoutes(fastify: FastifyInstance) {
     // @ts-ignore
     slack.alert({
       channel: "#notify",
-      text: `Pet created: ${event}`,
+      text: `Pet created: ${JSON.stringify(event)}`,
     });
+    if (event?.type == "INSERT") {
+      if (event.record.status == 1 || event.record.status == 2) {
+        // Send email to user
+      }
+    }
   });
 
   fastify.post("/api/v1/hook/payment-cu", async (request: FastifyRequest) => {
@@ -19,8 +25,40 @@ export function hookRoutes(fastify: FastifyInstance) {
     // @ts-ignore
     slack.alert({
       channel: "#notify",
-      text: `Payment created/updated: ${event}`,
+      text: `Payment created/updated: ${JSON.stringify(event)}`,
     });
+    if (event?.type == "UPDATE") {
+      if (event?.record?.receipt_url) {
+        // Send email to payment receipt and tell them its successful
+      }
+    }
+  });
+
+  fastify.post("/api/v1/hook/fbadsets-cu", async (request: FastifyRequest) => {
+    let event = request.body;
+    // @ts-ignore
+
+    if (event?.type == "CREATE") {
+      if (event?.record?.status === "PENDING REVIEW") {
+        slack.alert({
+          channel: "#notify",
+          text: `Fbadsets created/updated: ${JSON.stringify(event)}`,
+        });
+        // Send email saying its pending review
+      }
+    }
+    if (event?.type == "UPDATE") {
+      if (event?.record?.status === "FAILED") {
+        slack.alert({
+          channel: "#notify",
+          text: `Fbadsets created/updated: ${JSON.stringify(event)}`,
+        });
+        // Send email saying its failed
+      }
+      if (event?.record?.status === "IN_PROGRESS") {
+        // Send email saying its failed
+      }
+    }
   });
 
   // const sendFoundPetEmail = (payload) => {};
