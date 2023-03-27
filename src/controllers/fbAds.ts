@@ -32,6 +32,26 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         id: paymentId,
       },
       include: {
+        fb_adsets: true,
+        pets: {
+          include: {
+            pet_images: true,
+          },
+        },
+      },
+    });
+  };
+
+  const updatePayment = async (paymentId, payload) => {
+    return await prisma.payments.update({
+      where: {
+        id: paymentId,
+      },
+      data: {
+        ...payload,
+      },
+      include: {
+        fb_adsets: true,
         pets: {
           include: {
             pet_images: true,
@@ -268,7 +288,12 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   const createFbAdFlow = async (_paymentId: string) => {
     if (!_paymentId) throw new Error("No payment found");
 
-    const payment = await getPayment(_paymentId);
+    let payment = await getPayment(_paymentId);
+    if (payment?.fb_adsets?.status === "DISAPPROVED") {
+      payment = await updatePayment(_paymentId, {
+        adset_id: null,
+      });
+    }
 
     if (payment?.status !== 1) throw new Error("Payment has not been made");
     if (payment?.adset_id) throw new Error("Ad already created");
