@@ -137,7 +137,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
             {
               latitude: _pet.latitude,
               longitude: _pet.longitude,
-              radius: 10,
+              radius: 15,
               distance_unit: "mile",
             },
           ],
