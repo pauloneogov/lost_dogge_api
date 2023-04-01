@@ -7,8 +7,19 @@ import "../helpers/bigInt.js";
 import { logger } from "../main";
 
 export function stripeRoutes(fastify: FastifyInstance) {
-  const stripeEndpoint = fastify?.config.STRIPE_WEBHOOK;
-  const stripeClient = new Stripe(fastify?.config.STRIPE_SECRET, {
+  const stripeEndpoint =
+    fastify?.config.ENVIRONMENT == "production"
+      ? fastify?.config.STRIPE_WEBHOOK_LIVE
+      : fastify?.config.STRIPE_WEBHOOK_DEMO;
+
+  const stripeSecret =
+    fastify?.config.ENVIRONMENT == "production"
+      ? fastify?.config.STRIPE_SECRET_LIVE
+      : fastify?.config.STRIPE_SECRET_DEMO;
+
+  const enviroment = fastify?.initialConfig.ENVIRONMENT;
+
+  const stripeClient = new Stripe(stripeSecret, {
     apiVersion: "2022-11-15",
   });
 
@@ -20,6 +31,16 @@ export function stripeRoutes(fastify: FastifyInstance) {
     pet_id: string;
     user_id: string;
   };
+
+  fastify.get("/api/v1/stripe/products", async (request, reply) => {
+    console.log("env", enviroment);
+    let products = await prisma.stripe_products.findMany({
+      where: {
+        env: fastify?.config.ENVIRONMENT == "production" ? "live" : "demo",
+      },
+    });
+    return reply.send(products);
+  });
 
   fastify.post(
     "/api/v1/checkout-session",

@@ -203,6 +203,7 @@ model stripe_products {
   stripe_price_id String?
   key             String?    @default("")
   quantity        Int?       @db.SmallInt
+  env             String?    @db.VarChar
   payments        payments[]
 }
 

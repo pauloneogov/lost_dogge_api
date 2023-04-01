@@ -17,8 +17,11 @@ const main = async () => {
   const schema = {
     type: "object",
     required: [
-      "STRIPE_SECRET",
-      "STRIPE_WEBHOOK",
+      "ENVIRONMENT",
+      "STRIPE_SECRET_DEMO",
+      "STRIPE_WEBHOOK_DEMO",
+      "STRIPE_SECRET_LIVE",
+      "STRIPE_WEBHOOK_LIVE",
       "FACEBOOK_APP_ID",
       "FACEBOOK_ACCESS_TOKEN",
       "FACEBOOK_ACCESS_SECRET",
@@ -28,10 +31,19 @@ const main = async () => {
       "BASE_URL",
     ],
     properties: {
-      STRIPE_SECRET: {
+      ENVIRONMENT: {
         type: "string",
       },
-      STRIPE_WEBHOOK: {
+      STRIPE_SECRET_DEMO: {
+        type: "string",
+      },
+      STRIPE_WEBHOOK_DEMO: {
+        type: "string",
+      },
+      STRIPE_SECRET_LIVE: {
+        type: "string",
+      },
+      STRIPE_WEBHOOK_LIVE: {
         type: "string",
       },
       FACEBOOK_APP_ID: {
