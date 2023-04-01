@@ -74,6 +74,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
               quantity: stripeProduct.quantity,
             },
           ],
+          allow_promotion_codes: true,
           automatic_tax: {
             enabled: true,
           },

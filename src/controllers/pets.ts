@@ -1,7 +1,9 @@
+// @ts-nocheck
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "../prisma";
 import "../helpers/bigInt.js";
 import { pets, pet_images, Prisma } from "@prisma/client";
+import sharp from "sharp";
 
 enum PetStatus {
   REGISTERED = 0,
@@ -405,4 +407,13 @@ export function petRoutes(fastify: FastifyInstance) {
       });
     }
   );
+
+  fastify.post("/api/v1/pet/upload", async (request, reply) => {
+    const userId = request?.query?.userId;
+    const data = await request.file();
+    // get the file and resize it
+    // let file = sharp(data.file).resize(512, 512);
+    // console.log(file);
+    reply.send(data);
+  });
 }
