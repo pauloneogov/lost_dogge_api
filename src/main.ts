@@ -73,8 +73,10 @@ const main = async () => {
     },
   };
 
-  // @ts-ignore
-  slack = SlackNotify(process.env.SLACK_WEBHOOK_URL);
+  if (process.env.Env == "production") {
+    // @ts-ignore
+    slack = SlackNotify(process.env.SLACK_WEBHOOK_URL);
+  }
 
   const envToLogger = {
     transport: {

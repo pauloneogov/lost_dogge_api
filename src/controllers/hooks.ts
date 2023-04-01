@@ -9,10 +9,12 @@ export function hookRoutes(fastify: FastifyInstance) {
   fastify.post("/api/v1/hook/create-pet", async (request: FastifyRequest) => {
     let event = request.body;
     // @ts-ignore
-    slack.alert({
-      channel: "#notify",
-      text: `Pet created: ${JSON.stringify(event)}`,
-    });
+    if (slack) {
+      slack.alert({
+        channel: "#notify",
+        text: `Pet created: ${JSON.stringify(event)}`,
+      });
+    }
     if (event?.type == "INSERT") {
       if (event.record.status == 1 || event.record.status == 2) {
         // Send email to user
@@ -23,10 +25,12 @@ export function hookRoutes(fastify: FastifyInstance) {
   fastify.post("/api/v1/hook/payment-cu", async (request: FastifyRequest) => {
     let event = request.body;
     // @ts-ignore
-    slack.alert({
-      channel: "#notify",
-      text: `Payment created/updated: ${JSON.stringify(event)}`,
-    });
+    if (slack) {
+      slack.alert({
+        channel: "#notify",
+        text: `Payment created/updated: ${JSON.stringify(event)}`,
+      });
+    }
     if (event?.type == "UPDATE") {
       if (event?.record?.receipt_url) {
         // Send email to payment receipt and tell them its successful
@@ -40,19 +44,23 @@ export function hookRoutes(fastify: FastifyInstance) {
 
     if (event?.type == "CREATE") {
       if (event?.record?.status === "PENDING REVIEW") {
-        slack.alert({
-          channel: "#notify",
-          text: `Fbadsets created/updated: ${JSON.stringify(event)}`,
-        });
+        if (slack) {
+          slack.alert({
+            channel: "#notify",
+            text: `Fbadsets created/updated: ${JSON.stringify(event)}`,
+          });
+        }
         // Send email saying its pending review
       }
     }
     if (event?.type == "UPDATE") {
       if (event?.record?.status === "FAILED") {
-        slack.alert({
-          channel: "#notify",
-          text: `Fbadsets created/updated: ${JSON.stringify(event)}`,
-        });
+        if (slack) {
+          slack.alert({
+            channel: "#notify",
+            text: `Fbadsets created/updated: ${JSON.stringify(event)}`,
+          });
+        }
         // Send email saying its failed
       }
       if (event?.record?.status === "IN_PROGRESS") {
