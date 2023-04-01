@@ -17,7 +17,7 @@ export function stripeRoutes(fastify: FastifyInstance) {
       ? fastify?.config.STRIPE_SECRET_LIVE
       : fastify?.config.STRIPE_SECRET_DEMO;
 
-  const enviroment = fastify?.initialConfig.ENVIRONMENT;
+  const enviroment = fastify?.config.ENVIRONMENT;
 
   const stripeClient = new Stripe(stripeSecret, {
     apiVersion: "2022-11-15",
