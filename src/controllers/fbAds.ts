@@ -8,6 +8,7 @@ const AdAccount = bizSdk.AdAccount;
 const Ad = bizSdk.Ad;
 
 export function fbAdRoutes(fastify: FastifyInstance) {
+  const enviroment = fastify?.config.ENVIRONMENT;
   const facebookAccessToken = fastify?.config.FACEBOOK_ACCESS_TOKEN;
   const facebookAdAccountId = fastify?.config.FACEBOOK_AD_ACCOUNT_ID;
   const facebookPageId = fastify?.config.FACEBOOK_PAGE_ID;
@@ -128,7 +129,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       billing_event: "IMPRESSIONS",
       daily_budget: 600,
       campaign_id: fbCampaignId,
-      status: facebookAdsetStatus,
+      status: enviroment == "production" ? "ACTIVE" : "PAUSED",
       bid_strategy: "LOWEST_COST_WITH_BID_CAP",
       bid_amount: 100,
       targeting: {
@@ -250,7 +251,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         adset_id: _adset.fb_adset_id,
         creative: { creative_id: adCreative.id },
         body: `Last seen at ${_pet.address}`,
-        status: facebookAdsetStatus,
+        status: enviroment == "production" ? "ACTIVE" : "PAUSED",
       };
 
       const ad = await new AdAccount(facebookAdAccountId).createAd(
