@@ -234,7 +234,12 @@ export function fbAdRoutes(fastify: FastifyInstance) {
           page_id: facebookPageId,
           link_data: {
             link: `${baseUrl}`,
-            child_attachments: childAttachments(_pet),
+            ...(_pet.pet_images.length === 1 && {
+              picture: _pet.pet_images[0].url,
+            }),
+            ...(_pet.pet_images.length > 1 && {
+              child_attachments: childAttachments(_pet),
+            }),
           },
         },
       };
