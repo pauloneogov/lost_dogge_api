@@ -109,8 +109,9 @@ export function petRoutes(fastify: FastifyInstance) {
 
       radius = address ? radius : 10000000;
       console.log("radius", radius);
+      console.log("status", status);
 
-      const statusQuery = Prisma.sql`AND public.pets.status = ${status}::int`;
+      const statusQuery = Prisma.sql`public.pets.status = ${status}::int`;
 
       // const breedsQuery = breed_ids.length
       //   ? Prisma.sql`AND public.animal_breeds.id = ANY(${breed_ids}::int[])`
@@ -157,6 +158,7 @@ export function petRoutes(fastify: FastifyInstance) {
             ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography,
             ${Number(radius)}
         )
+        AND public.pets.status = ${status}::int
         GROUP BY public.pets.id, public.animal_types.id, public.pet_images.id
         ${orderByQuery}
         LIMIT ${Number(limit)}

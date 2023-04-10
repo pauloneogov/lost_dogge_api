@@ -6,6 +6,22 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import { slack } from "../main";
 
 export function hookRoutes(fastify: FastifyInstance) {
+  fastify.post("/api/v1/hook/create-user", async (request: FastifyRequest) => {
+    let event = request.body;
+    // @ts-ignore
+    if (slack) {
+      slack.alert({
+        channel: "#notify",
+        text: `User created: ${JSON.stringify(event)}`,
+      });
+    }
+    if (event?.type == "CREATE") {
+      if (event.record.status == 1 || event.record.status == 2) {
+        // Send email to user
+      }
+    }
+  });
+
   fastify.post("/api/v1/hook/create-pet", async (request: FastifyRequest) => {
     let event = request.body;
     // @ts-ignore
