@@ -233,7 +233,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
         object_story_spec: {
           page_id: facebookPageId,
           link_data: {
-            link: `${baseUrl}`,
+            link: `${baseUrl}/pets?type=${petType}&pet_id=${_pet.id}`,
             ...(_pet.pet_images.length === 1 && {
               picture: _pet.pet_images[0].url,
             }),
