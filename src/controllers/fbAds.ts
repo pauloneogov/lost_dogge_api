@@ -364,6 +364,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       "ad_id",
       "impressions",
       "inline_link_click_ctr",
+      "clicks",
       "reach",
       "interactive_component_tap",
       "account_id",
@@ -376,8 +377,12 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       adInsightsField,
       adInsightsParams
     );
+    console.log(
+      "🚀 ~ file: fbAds.ts:379 ~ getFbAdInsights ~ insights:",
+      insights?.[0]._data
+    );
 
-    return insights.data;
+    return insights?.[0]._data;
   };
 
   const getFbAd = async (adId: string) => {
@@ -445,17 +450,16 @@ export function fbAdRoutes(fastify: FastifyInstance) {
 
     for (const dbAdset of dbFbAdsets) {
       const fbAdSetInsight = await getFbAdInsights(dbAdset.fb_adsets?.fb_ad_id);
+
+      if (!fbAdSetInsight.ad_id) return;
       logger.info({
         type: "fbAdInsightsTask: fbAdSetInsight",
         data: fbAdSetInsight,
       });
-      if (!fbAdSetInsight) continue;
-      logger.info("fbAdSetInsight", fbAdSetInsight);
 
-      updateAdDetails({
-        adId: _dbFbAdset.id,
+      await updateAdDetails(dbAdset?.fb_adsets?.id, {
         impressions: fbAdSetInsight.impressions || 0,
-        linkClicks: fbAdSetInsight.inline_link_clicks || 0,
+        linkClicks: fbAdSetInsight.clicks || 0,
         reach: fbAdSetInsight.reach || 0,
       });
     }
@@ -578,21 +582,29 @@ export function fbAdRoutes(fastify: FastifyInstance) {
     adSetId: string,
     { status, impressions, linkClicks, reach, statusCheckDate, fbAdPreviewUrl }
   ) => {
-    const adsets = await prisma.fb_adsets.update({
-      where: {
-        id: adSetId,
-      },
-      data: {
-        ...(status && { status }),
-        ...(impressions && { impression_count: impressions }),
-        ...(linkClicks && { link_clicks_count: linkClicks }),
-        ...(reach && { reach_count: reach }),
-        ...(statusCheckDate && { status_check_date: statusCheckDate }),
-        ...(fbAdPreviewUrl && { fb_ad_preview_url: fbAdPreviewUrl }),
-      },
-    });
+    console.log(adSetId);
+    try {
+      const adsets = await prisma.fb_adsets.update({
+        where: {
+          id: adSetId,
+        },
+        data: {
+          ...(status && { status }),
+          ...(impressions && { impression_count: impressions }),
+          ...(linkClicks && { link_clicks_count: linkClicks }),
+          ...(reach && { reach_count: reach }),
+          ...(statusCheckDate && { status_check_date: statusCheckDate }),
+          ...(fbAdPreviewUrl && { fb_ad_preview_url: fbAdPreviewUrl }),
+        },
+      });
+      console.log(adsets);
 
-    return adsets || [];
+      return adsets || [];
+    } catch (error) {
+      console.log(error);
+    }
+
+    return [];
   };
 
   // FOR IMPRESSIONS
@@ -603,7 +615,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
       where: {
         status: 1,
         fb_adsets: {
-          status: "PAUSED",
+          status: "ACTIVE",
           fb_ad_id: {
             not: null,
           },
@@ -702,7 +714,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
   );
 
   fastify.scheduler.addSimpleIntervalJob(
-    new SimpleIntervalJob({ minutes: 60 }, runFbAdInsightsTask)
+    new SimpleIntervalJob({ seconds: 30 }, runFbAdInsightsTask)
   );
   fastify.scheduler.addSimpleIntervalJob(
     new SimpleIntervalJob({ minutes: 30 }, runArchiveFbAdTask)
