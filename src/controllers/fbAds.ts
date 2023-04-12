@@ -240,6 +240,7 @@ export function fbAdRoutes(fastify: FastifyInstance) {
             ...(_pet.pet_images.length > 1 && {
               child_attachments: childAttachments(_pet),
             }),
+            description: `I was lost at ${_pet.address}`,
           },
         },
       };
