@@ -118,7 +118,7 @@ export function petRoutes(fastify: FastifyInstance) {
       //   : Prisma.sql``;
 
       const animalTypesQuery = animal_type_id
-        ? Prisma.sql`public.pets.animal_type_id = ${animal_type_id}::int`
+        ? Prisma.sql`AND public.pets.animal_type_id = ${animal_type_id}::int`
         : Prisma.sql``;
 
       const genderQuery = gender
@@ -158,6 +158,7 @@ export function petRoutes(fastify: FastifyInstance) {
             ST_MakePoint(public.pets.longitude, public.pets.latitude)::geography,
             ${Number(radius)}
         )
+        ${animalTypesQuery}
         AND public.pets.status = ${status}::int
         GROUP BY public.pets.id, public.animal_types.id, public.pet_images.id
         ${orderByQuery}
