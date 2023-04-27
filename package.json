@@ -42,6 +42,7 @@
     "@fastify/static": "^6.6.0",
     "@prisma/client": "4.3.1",
     "base64-arraybuffer": "^1.0.2",
+    "chatgpt": "^5.2.2",
     "dotenv": "^16.0.0",
     "facebook-nodejs-business-sdk": "^15.0.0",
     "fast-json-stringify": "^5.4.0",
