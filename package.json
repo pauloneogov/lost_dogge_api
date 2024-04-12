@@ -10,7 +10,7 @@
     "db:seed": "prisma db seed",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "build": "tsc",
+    "build": "prisma migrate dev && prisma db push && prisma db seed && tsc",
     "dev": "ts-node src/main.ts",
     "dev:watch": "nodemon src/main.ts",
     "heroku-postbuild": "tsc",
